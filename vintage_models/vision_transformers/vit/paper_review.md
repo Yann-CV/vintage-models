@@ -9,4 +9,10 @@ An image is worth 16x16 words: Transformers for image recognition at scale.
 ![Encoding architecture](./static/vit_architecture.png)
 
 
-# Personal notes
+# Connection to other papers
+
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017).
+[Attention is all you need](https://arxiv.org/pdf/1706.03762.pdf). Advances in neural information processing systems, 30.
+
+![Transformer architecture](./static/transformer_architecture.png)
+![Transformer architecture](./static/multihead_attention.png)
