@@ -6,6 +6,7 @@ class ScaledDotProductAttention(Module):
     def __init__(self, dk: int) -> None:
         super().__init__()
         self.dk = dk
+        self.qvk_module = True
 
     def forward(self, keys: Tensor, values: Tensor, queries: Tensor) -> Tensor:
         if keys.shape[1] != self.dk or queries.shape[1] != self.dk:
@@ -30,6 +31,7 @@ class HeadAttention(Module):
         self.v_linear = Linear(self.dv, self.dv)
 
         self.attention = ScaledDotProductAttention(dk=self.dk)
+        self.qvk_module = True
 
     def forward(self, keys: Tensor, values: Tensor, queries: Tensor) -> Tensor:
         v_linearized = self.v_linear(values)
@@ -48,6 +50,8 @@ class MultiHeadAttention(Module):
 
         self.heads = [HeadAttention(dk=self.dk, dv=self.dv) for _ in range(self.h)]
         self.linear = Linear(self.h * self.dv, self.dv)
+
+        self.qvk_module = True
 
     def forward(self, keys: Tensor, values: Tensor, queries: Tensor) -> Tensor:
         outputs = [head(keys, values, queries) for head in self.heads]
