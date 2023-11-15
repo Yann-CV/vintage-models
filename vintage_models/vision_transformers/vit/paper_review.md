@@ -8,7 +8,6 @@ An image is worth 16x16 words: Transformers for image recognition at scale.
 
 ![Encoding architecture](./static/vit_architecture.png)
 
-
 # Connection to other papers
 
 Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017).
@@ -16,3 +15,13 @@ Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ..
 
 ![Transformer architecture](./static/transformer_architecture.png)
 ![Transformer architecture](./static/multihead_attention.png)
+
+# Advantages and limitations
+
++ attend to different location even in first layers
+- Attention mechanisms requires intensive computation. The dot product between all tokens
+is a O(n²) operation.
+
+# Interesting resources
+
+- Yannic Kilcher's video explanation: https://www.youtube.com/watch?v=TrdevFK_am4
