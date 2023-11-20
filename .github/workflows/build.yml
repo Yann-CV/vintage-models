@@ -1,0 +1,25 @@
+name: Continuous Integration (push)
+
+on: [push]
+
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest vintage_models/tests/
