@@ -9,13 +9,13 @@ class ScaledDotProductAttention(Module):
         self.qvk_module = True
 
     def forward(self, keys: Tensor, values: Tensor, queries: Tensor) -> Tensor:
-        if keys.shape[1] != self.dk or queries.shape[1] != self.dk:
-            raise ValueError(f"keys and queries must be equal to {self.dk}")
+        if keys.shape[-1] != self.dk or queries.shape[-1] != self.dk:
+            raise ValueError(f"keys and queries length must be equal to {self.dk}")
 
-        if keys.shape[0] != values.shape[0]:
+        if keys.shape[-2] != values.shape[-2]:
             raise ValueError("keys and values should have the same row count")
 
-        dot_product = matmul(queries, other=keys.transpose(0, 1))
+        dot_product = matmul(queries, other=keys.transpose(-2, -1))
         val_weights = softmax(dot_product / self.dk, dim=-1)
         return matmul(val_weights, other=values)
 
