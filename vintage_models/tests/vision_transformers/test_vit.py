@@ -29,7 +29,7 @@ class TestVitEncoder:
             mlp_hidden_size=16,
         )
         output = encoder(embedded_batches)
-        assert output.shape == (1, 4, 64)
+        assert output.shape == (4, 64)
 
 
 class TestVitEmbedder:

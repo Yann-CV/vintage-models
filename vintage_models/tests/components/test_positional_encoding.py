@@ -29,3 +29,7 @@ class TestLearnablePositionalEncoding1D:
         output = self.encoding(input)
         assert output.shape == (2, 4)
         assert not torch.allclose(output, input)
+
+    def test_wrong_sequence_length(self):
+        with pytest.raises(ValueError):
+            self.encoding(torch.zeros(3, 4))

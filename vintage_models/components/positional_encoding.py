@@ -1,5 +1,5 @@
 from torch.nn import Module, ParameterList, Parameter
-from torch import Tensor, sin, cos, tensor, stack, randn
+from torch import Tensor, sin, cos, tensor, stack, randn, cat
 
 
 class PositionalEncoding1D(Module):
@@ -50,7 +50,16 @@ class LearnablePositionalEncoding1D(Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        for idx, positional_embedding in enumerate(self.positional_embeddings):
-            x[idx, :] = x[idx, :] + positional_embedding
+        if x.shape[0] != self.sequence_len:
+            raise ValueError(
+                f"The sequence length {x.shape[0]} of the input does not match "
+                f"the sequence length {self.sequence_len} of the positional embeddings."
+            )
 
-        return x
+        return cat(
+            [
+                x[idx, :] + positional_embedding
+                for idx, positional_embedding in enumerate(self.positional_embeddings)
+            ],
+            dim=0,
+        )
