@@ -18,7 +18,7 @@ class TestPaddingValuesToBeMultiple:
         real = 30
         multiple_of = 15
         start, end = padding_values_to_be_multiple(real, multiple_of)
-        assert start == end == 1
+        assert start == end == 0
 
     def test_with_bigger_real(self):
         real = 25
