@@ -5,7 +5,7 @@ from pytorch_lightning.loggers import MLFlowLogger
 from torch.nn.functional import nll_loss
 from torch.optim import SGD
 
-from vintage_models.experiments.data.mnist import MNISTDataModule
+from experiments.data.mnist import MNISTDataModule
 from vintage_models.vision_transformers.vit.vit import ViT
 
 EPOCH_COUNT = 100
