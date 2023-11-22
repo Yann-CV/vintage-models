@@ -8,7 +8,7 @@ class ResidualWithSelfAttention(Module):
         self.layers = layers
 
     def forward(self, x: Tensor) -> Tensor:
-        init = x
+        init = x.clone()
         for layer in self.layers:
             x = layer(x, x, x) if getattr(layer, "qvk_module", False) else layer(x)
         return init + x

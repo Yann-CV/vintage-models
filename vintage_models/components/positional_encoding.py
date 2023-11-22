@@ -50,16 +50,23 @@ class LearnablePositionalEncoding1D(Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        if x.shape[0] != self.sequence_len:
+        if x.shape[-2] != self.sequence_len:
             raise ValueError(
-                f"The sequence length {x.shape[0]} of the input does not match "
+                f"The sequence length {x.shape[-2]} of the input does not match "
                 f"the sequence length {self.sequence_len} of the positional embeddings."
             )
 
-        return cat(
-            [
-                x[idx, :] + positional_embedding
-                for idx, positional_embedding in enumerate(self.positional_embeddings)
-            ],
-            dim=0,
-        )
+        with_positions = [
+            cat(
+                [
+                    single[idx, :] + positional_embedding
+                    for idx, positional_embedding in enumerate(
+                        self.positional_embeddings
+                    )
+                ],
+                dim=0,
+            )
+            for single in x
+        ]
+
+        return stack(with_positions, dim=0)

@@ -6,7 +6,7 @@ from vintage_models.components.multilayer_perceptron import TwoLayerGeluMLP, Two
 from vintage_models.components.patch import PatchConverter
 from vintage_models.components.positional_encoding import LearnablePositionalEncoding1D
 from vintage_models.components.residual import ResidualWithSelfAttention
-from vintage_models.utility.image import PaddingMode
+from vintage_models.utility.transform import PaddingMode
 
 
 class ViTEncoder(Module):
@@ -19,6 +19,10 @@ class ViTEncoder(Module):
     ) -> None:
         super().__init__()
         self.layer_count = layer_count
+        self.head_count = head_count
+        self.embedding_len = embedding_len
+        self.mlp_hidden_size = mlp_hidden_size
+
         self.self_attention_residual = ResidualWithSelfAttention(
             [
                 LayerNorm(embedding_len),
@@ -51,6 +55,10 @@ class ViTEmbedder(Module):
         embedding_len: int,
     ) -> None:
         super().__init__()
+        self.patch_size = patch_size
+        self.embedding_len = embedding_len
+        self.image_width = image_width
+        self.image_height = image_height
 
         self.linear = Linear(
             in_features=patch_size * patch_size * 3,
@@ -61,11 +69,12 @@ class ViTEmbedder(Module):
             sequence_len=(image_width // patch_size) * (image_height // patch_size) + 1,
             embedding_len=embedding_len,
         )
-        self.cls_token = Parameter(randn(1, embedding_len))
+        self.cls_token = Parameter(randn(1, 1, embedding_len))
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.linear(x)
-        x = cat((self.cls_token, x), dim=0)
+        cls_tokens = self.cls_token.repeat(x.shape[0], 1, 1)
+        x = cat((cls_tokens, x), dim=1)
         return self.positional_encoding(x)
 
 
@@ -91,8 +100,8 @@ class ViT(Module):
         )
         self.embedder = ViTEmbedder(
             patch_size=patch_size,
-            image_width=image_width,
-            image_height=image_height,
+            image_width=self.patch_converter.final_width,
+            image_height=self.patch_converter.final_height,
             embedding_len=embedding_len,
         )
         self.encoder = ViTEncoder(
@@ -111,5 +120,13 @@ class ViT(Module):
         image_as_patch = self.patch_converter(x)
         patch_embeddings = self.embedder(image_as_patch)
         encoded = self.encoder(patch_embeddings)
-        classified = self.classification_mlp(encoded[0, :])
+        classified = self.classification_mlp(encoded[:, 0, :])
         return softmax(classified, dim=-1)
+
+    def __str__(self):
+        return (
+            f"vit{self.patch_converter.patch_size}-embed{self.embedder.embedding_len}"
+            f"-mlp{self.classification_mlp.hidden_size}-"
+            f"heads{self.encoder.head_count}-"
+            f"layers{self.encoder.layer_count}"
+        )

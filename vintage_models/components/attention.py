@@ -1,4 +1,4 @@
-from torch.nn import Module, Linear
+from torch.nn import Module, Linear, ModuleList
 from torch import Tensor, matmul, softmax, cat
 
 
@@ -48,7 +48,9 @@ class MultiHeadAttention(Module):
         self.dv = dv
         self.h = h
 
-        self.heads = [HeadAttention(dk=self.dk, dv=self.dv) for _ in range(self.h)]
+        self.heads = ModuleList(
+            [HeadAttention(dk=self.dk, dv=self.dv) for _ in range(self.h)]
+        )
         self.linear = Linear(self.h * self.dv, self.dv)
 
         self.qvk_module = True

@@ -1,4 +1,4 @@
-from vintage_models.utility.image import padding_values_to_be_multiple
+from vintage_models.utility.transform import padding_values_to_be_multiple
 
 
 class TestPaddingValuesToBeMultiple:
