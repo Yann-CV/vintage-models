@@ -1,11 +1,11 @@
-from torch.nn import Module
+from torch.nn import Module, ModuleList
 from torch import Tensor
 
 
 class ResidualWithSelfAttention(Module):
     def __init__(self, layers: list[Module]) -> None:
         super().__init__()
-        self.layers = layers
+        self.layers = ModuleList(layers)
 
     def forward(self, x: Tensor) -> Tensor:
         init = x.clone()
