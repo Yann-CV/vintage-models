@@ -7,7 +7,7 @@ from torch.utils.data import random_split, DataLoader
 from torchvision.datasets import MNIST
 from torchvision.transforms.v2 import Compose, ToImage, Normalize, ToDtype
 
-from vintage_models.utility.transform import MaybeToColor
+from vintage_models.components.image import MaybeToColor
 
 
 class MNISTDataModule(LightningDataModule):
