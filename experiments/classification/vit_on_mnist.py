@@ -1,16 +1,16 @@
 from pathlib import Path
 
-from lightning import Fabric
+from lightning import Trainer
+from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import MLFlowLogger
-from torch.nn.functional import nll_loss
-from torch.optim import SGD
-
+from experiments.classification.classifier import ImageClassifier
 from experiments.data.mnist import MNISTDataModule
 from vintage_models.vision_transformers.vit.vit import ViT
 
+
 EPOCH_COUNT = 100
 MODEL = ViT(
-    patch_size=16,
+    patch_size=8,
     image_width=28,
     image_height=28,
     embedding_len=64,
@@ -19,7 +19,8 @@ MODEL = ViT(
     layer_count=4,
     class_count=10,
 )
-OPTIMIZER = SGD(MODEL.parameters(), lr=0.1)
+CLASSIFIER = ImageClassifier(MODEL)
+
 LOGGER = MLFlowLogger(
     experiment_name="ViT on MNIST",
     tracking_uri="/storage/ml/mlruns",
@@ -27,25 +28,29 @@ LOGGER = MLFlowLogger(
     log_model=True,
 )
 
-DATAMODULE = MNISTDataModule(Path("/storage/ml"), train_batch_size=4000)
+CHECKPOINT_CALLBACK = ModelCheckpoint(
+    save_top_k=1,
+    monitor="training_loss",
+    mode="min",
+    dirpath="/storage/ml/models",
+    filename="vit-mnist-{epoch:02d}-{accuracy:.2f}",
+)
+
+DATAMODULE = MNISTDataModule(Path("/storage/ml"), train_batch_size=2000)
+
+
 DATAMODULE.prepare_data()
 DATAMODULE.setup("fit")
-
-FABRIC = Fabric(accelerator="cuda", loggers=[LOGGER])
-FABRIC.launch()
-
-model, optimizer = FABRIC.setup(MODEL, OPTIMIZER)
-
-train_loader = FABRIC.setup_dataloaders(DATAMODULE.train_dataloader())
-
-for epoch in range(EPOCH_COUNT):
-    print(f"starting epoch {epoch}")
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        optimizer.zero_grad()
-        output = model(data)
-        loss = nll_loss(output, target)
-        FABRIC.backward(loss)
-        optimizer.step()
-    FABRIC.log("loss", loss.item(), epoch)
-    print(f"Loss epoch {epoch}: {loss.item()}")
+TRAINER = Trainer(
+    accelerator="cuda",
+    callbacks=[CHECKPOINT_CALLBACK],
+    logger=LOGGER,
+    max_epochs=EPOCH_COUNT,
+)
+TRAINER.fit(
+    model=CLASSIFIER,
+    train_dataloaders=DATAMODULE.train_dataloader(),
+    val_dataloaders=DATAMODULE.val_dataloader(),
+)
+DATAMODULE.setup("test")
+TRAINER.test(dataloaders=DATAMODULE.test_dataloader())
