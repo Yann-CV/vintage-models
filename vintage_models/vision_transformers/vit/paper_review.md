@@ -16,11 +16,6 @@ Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ..
 ![Transformer architecture](./static/transformer_architecture.png)
 ![Transformer architecture](./static/multihead_attention.png)
 
-# Advantages and limitations
-
-+ attend to different location even in first layers
-- Attention mechanisms requires intensive computation. The dot product between all tokens
-is a O(n²) operation.
 
 # Interesting resources
 
