@@ -5,7 +5,7 @@ from torch.nn import Module, Unfold
 from torch.nn.functional import pad
 
 
-from vintage_models.utility.image import PaddingMode, padding_values_to_be_multiple
+from vintage_models.utility.transform import PaddingMode, padding_values_to_be_multiple
 
 
 class PatchConverter(Module):
@@ -22,18 +22,26 @@ class PatchConverter(Module):
         self.image_width = image_width
         self.image_height = image_height
         self.padding_mode = padding_mode
+        self.padding = padding_values_to_be_multiple(
+            self.image_width, self.patch_size
+        ) + padding_values_to_be_multiple(self.image_height, self.patch_size)
         self.pad = partial(
             pad,
-            pad=(
-                padding_values_to_be_multiple(self.image_width, self.patch_size)
-                + padding_values_to_be_multiple(self.image_height, self.patch_size)
-            ),
+            pad=self.padding,
             mode=self.padding_mode.value,
             value=0,
         )
         self.unfold = Unfold(
             kernel_size=(self.patch_size, self.patch_size), stride=self.patch_size
         )
+
+    @property
+    def final_width(self) -> int:
+        return self.image_width + self.padding[0] + self.padding[1]
+
+    @property
+    def final_height(self) -> int:
+        return self.image_width + self.padding[0] + self.padding[1]
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.pad(input=x)

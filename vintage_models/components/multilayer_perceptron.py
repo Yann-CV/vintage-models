@@ -24,6 +24,10 @@ class TwoLayerGeluMLP(Module):
 class TwoLayerMLP(Module):
     def __init__(self, in_size: int, out_size: int, hidden_size: int) -> None:
         super().__init__()
+        self.in_size = in_size
+        self.out_size = out_size
+        self.hidden_size = hidden_size
+
         self.model = Sequential(
             OrderedDict(
                 [
