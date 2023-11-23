@@ -1,3 +1,5 @@
+from typing import Mapping
+
 from lightning import LightningModule
 from torch import Tensor
 from torch.nn import Module
@@ -47,11 +49,11 @@ class ImageClassifier(LightningModule):
         )
         self.training_step_outputs.clear()
 
-    def validation_step(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+    def validation_step(self, batch: Tensor) -> Mapping[str, Tensor]:
         data, target = batch
         preds = self.model(data)
         self.validation_step_outputs.append((preds, target))
-        return preds, target
+        return {"preds": preds, "target": target}
 
     def on_validation_epoch_end(self) -> None:
         for preds, target in self.validation_step_outputs:
@@ -60,12 +62,12 @@ class ImageClassifier(LightningModule):
         self.metrics.reset()
         self.log_dict(metric_results, prog_bar=True, logger=True)
 
-    def test_step(self, batch: Tensor) -> tuple[Tensor, Tensor]:
+    def test_step(self, batch: Tensor) -> Mapping[str, Tensor]:
         data, target = batch
         preds = self.model(data)
         self.test_step_outputs.append((preds, target))
 
-        return preds, target
+        return {"preds": preds, "target": target}
 
     def on_test_epoch_end(self) -> None:
         for preds, target in self.test_step_outputs:
