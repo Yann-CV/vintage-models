@@ -1,17 +1,15 @@
 import pytest
 
 import torch
-import numpy as np
 
 from vintage_models.components.patch import PatchConverter
 
 
 @pytest.fixture()
 def input():
-    matrix = np.array([v for v in range(4 * 4 * 3)], dtype=np.uint8).reshape(
+    return torch.arange(start=0, end=4 * 4 * 3, dtype=torch.float32).reshape(
         (1, 3, 4, 4)
     )
-    return torch.tensor(matrix, dtype=torch.float32)
 
 
 class TestPatchConverter:
