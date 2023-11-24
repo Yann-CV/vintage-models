@@ -3,6 +3,14 @@ from torch import Tensor
 
 
 class ResidualWithSelfAttention(Module):
+    """Residual module allowing to deal with self attention layers.
+
+    The provided value is added to the result of the forward pass among all provided layers.
+
+    Attributes:
+        layers: The layers to apply.
+    """
+
     def __init__(self, layers: list[Module]) -> None:
         super().__init__()
         self.layers = ModuleList(layers)

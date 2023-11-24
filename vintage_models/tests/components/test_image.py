@@ -11,29 +11,29 @@ def input():
 
 class TestImageTargeter:
     def test_with_padding(self, input):
-        targeter = ImageTargeter(width_in=4, height_in=4, width_out=6, height_out=6)
+        targeter = ImageTargeter(in_width=4, in_height=4, out_width=6, out_height=6)
         output = targeter(input)
         assert output.shape == (1, 3, 6, 6)
 
     def test_with_resize(self, input):
-        targeter = ImageTargeter(width_in=4, height_in=4, width_out=3, height_out=3)
+        targeter = ImageTargeter(in_width=4, in_height=4, out_width=3, out_height=3)
         output = targeter(input)
         assert output.shape == (1, 3, 3, 3)
 
     def test_with_nothing(self, input):
-        targeter = ImageTargeter(width_in=4, height_in=4, width_out=4, height_out=4)
+        targeter = ImageTargeter(in_width=4, in_height=4, out_width=4, out_height=4)
         output = targeter(input)
         assert output.shape == (1, 3, 4, 4)
 
     def test_without_color(self, input):
         targeter = ImageTargeter(
-            width_in=4, height_in=4, width_out=4, height_out=4, color=False
+            in_width=4, in_height=4, out_width=4, out_height=4, color=False
         )
         output = targeter(input)
         assert output.shape == (1, 1, 4, 4)
 
     def test_with_wrong_size(self):
-        targeter = ImageTargeter(width_in=4, height_in=4, width_out=4, height_out=4)
+        targeter = ImageTargeter(in_width=4, in_height=4, out_width=4, out_height=4)
         with pytest.raises(ValueError):
             targeter(torch.zeros(1, 3, 5, 5))
 

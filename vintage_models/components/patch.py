@@ -9,6 +9,18 @@ from vintage_models.utility.transform import PaddingMode, padding_values_to_be_m
 
 
 class PatchConverter(Module):
+    """Convert an image to unfolded patches.
+
+    Attributes:
+        patch_size: The size of the patches.
+        image_width: The width of the image.
+        image_height: The height of the image.
+        padding_mode: Padding mode if padding is required.
+        padding: Padding values to be applied.
+        pad: function to pad the image if needed.
+        unfold: function to unfold the image area as patch.
+    """
+
     def __init__(
         self,
         patch_size: int,

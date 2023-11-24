@@ -40,9 +40,9 @@ class TrainableAddPool2D(Module):
 
     def __init__(
         self,
-        kernel_size: _size_2_t,
         in_channels: int,
         activation: Module,
+        kernel_size: _size_2_t,
         stride: None | _size_2_t = None,
         padding: _size_2_t = 0,
         ceil_mode: bool = False,

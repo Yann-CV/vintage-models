@@ -43,10 +43,10 @@ class LeNet5(Module):
         self.class_count = class_count
 
         self.image_targeter = ImageTargeter(
-            width_in=image_width,
-            height_in=image_height,
-            width_out=32,
-            height_out=32,
+            in_width=image_width,
+            in_height=image_height,
+            out_width=32,
+            out_height=32,
             padding_mode=padding_mode,
             color=False,
         )
