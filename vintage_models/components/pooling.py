@@ -1,59 +1,74 @@
-from functools import partial
-
-import torch
 from torch import Tensor, randn
-from torch.nn import Module, Parameter
-from torch.nn.functional import conv2d
+from torch.nn import Module, Parameter, ParameterList, AvgPool2d
+from torch.nn.common_types import _size_2_t
+
+
+class AddPool2D(AvgPool2d):
+    """Add the values in the pooling kernel together.
+
+    Attributes: See torch.nn.AvgPool2d. Here, the divisor_override is always 1
+    (obtain the sum and not the average).
+    """
+
+    def __init__(
+        self,
+        kernel_size: _size_2_t,
+        stride: None | _size_2_t = None,
+        padding: _size_2_t = 0,
+        ceil_mode: bool = False,
+        count_include_pad: bool = True,
+    ) -> None:
+        super().__init__(
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            ceil_mode=ceil_mode,
+            count_include_pad=count_include_pad,
+            divisor_override=1,
+        )
 
 
 class TrainableAddPool2D(Module):
+    """Add pooling with trainable scale, bias and activation.
+
+    Attributes:
+        in_channels: Number of input channels for each element of the batch.
+        activation: Activation function to apply after the scaled and biased pooling.
+        Other: see torch.nn.AvgPool2d. Here, the divisor_override is always 1
+        (obtain the sum and not the average).
+    """
+
     def __init__(
         self,
-        kernel_size: int,
+        kernel_size: _size_2_t,
         in_channels: int,
         activation: Module,
-        padding: str | int | tuple[int, int] = 0,
-        dilation: int = 1,
+        stride: None | _size_2_t = None,
+        padding: _size_2_t = 0,
+        ceil_mode: bool = False,
+        count_include_pad: bool = True,
     ) -> None:
         super().__init__()
         self.activation = activation
-        self.bias: None | Parameter = Parameter(randn(1))
-        self.scale: None | Parameter = Parameter(randn(1))
+        self.bias: ParameterList = ParameterList(
+            [Parameter(randn(1)) for _ in range(in_channels)]
+        )
+        self.scale: ParameterList = ParameterList(
+            [Parameter(randn(1)) for _ in range(in_channels)]
+        )
         self.add_pool_2d = AddPool2D(
             kernel_size=kernel_size,
-            in_channels=in_channels,
+            stride=stride,
             padding=padding,
-            dilation=dilation,
+            ceil_mode=ceil_mode,
+            count_include_pad=count_include_pad,
         )
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.add_pool_2d(x)
-
-        if self.scale is not None:
-            x *= self.scale
-
-        if self.bias is not None:
-            x += self.bias
+        print(x.shape)
+        for idx, s in enumerate(self.scale):
+            x[:, idx, :, :] *= s
+            x[:, idx, :, :] *= self.bias[idx]
 
         return self.activation(x)
-
-
-class AddPool2D(Module):
-    def __init__(
-        self,
-        kernel_size: int,
-        in_channels: int,
-        padding: str | int | tuple[int, int] = 0,
-        dilation: int = 1,
-    ) -> None:
-        super().__init__()
-        self.conv = partial(
-            conv2d,
-            weight=torch.ones(1, in_channels, kernel_size, kernel_size),
-            stride=kernel_size,
-            padding=padding,
-            dilation=dilation,
-        )
-
-    def forward(self, x: Tensor) -> Tensor:
-        return self.conv(x)

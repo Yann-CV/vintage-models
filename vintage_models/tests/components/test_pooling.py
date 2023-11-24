@@ -15,7 +15,6 @@ class TestAddPool2D:
     def test_simple_usage(self, input):
         pooler = AddPool2D(
             kernel_size=2,
-            in_channels=1,
         )
         output = pooler(input)
         assert output.shape == (2, 1, 2, 2)

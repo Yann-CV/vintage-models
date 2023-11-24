@@ -6,6 +6,22 @@ from vintage_models.utility.transform import PaddingMode, padding_values_to_be_m
 
 
 class ImageTargeter(Module):
+    """Prepare an image for a model (obtain the right size).
+
+    If the input image is less than the target size, it will be padded.
+    Otherwise, If the input image is greater than the target size, it will be resized.
+    Finally, the image will be converted to grayscale or color if needed.
+
+    Attributes:
+        _width_in: Width of the input image.
+        _height_in: Height of the input image.
+        _width_out: Width of the output image.
+        _height_out: Height of the output image.
+        _padding_mode: Padding mode if padding is required.
+        _color: Whether the output image should be color or grayscale.
+
+    """
+
     def __init__(
         self,
         width_in: int,
@@ -22,6 +38,7 @@ class ImageTargeter(Module):
         self._width_out = width_out
         self._height_out = height_out
         self._padding_mode = padding_mode
+        self._color = color
 
         transforms = (
             (
@@ -53,12 +70,16 @@ class ImageTargeter(Module):
         )
 
     @property
-    def final_width(self) -> int:
-        return self._width_out
+    def width_in(self) -> int:
+        return self._width_in
 
     @property
-    def final_height(self) -> int:
-        return self._height_out
+    def height_in(self) -> int:
+        return self._height_in
+
+    @property
+    def padding_mode(self) -> PaddingMode:
+        return self._padding_mode
 
     def forward(self, x: Tensor) -> Tensor:
         if x.shape[-1] != self._width_in or x.shape[-2] != self._height_in:
@@ -73,6 +94,8 @@ class ImageTargeter(Module):
 
 
 class MaybeToColor(Module):
+    """Convert a grayscale image to color if needed."""
+
     def forward(self, img: Tensor) -> Tensor:
         channel_count = img.shape[-3]
 
