@@ -1,4 +1,5 @@
 import torch
+from torch import stack
 from torch.nn import Linear, MSELoss
 
 from torch.nn.functional import mse_loss
@@ -30,5 +31,9 @@ class EuclideanDistanceRBF(Linear):
         )
 
     def forward(self, x):
-        loss = mse_loss(x, self.weight, reduction="none")
-        return torch.sum(loss, dim=-1)
+        if len(x.shape) == 1:
+            x = x.unsqueeze(0)
+        weights = stack([self.weight.transpose(0, 1)] * x.shape[0], dim=0)
+        x = stack([x] * self.out_features, dim=-1)
+        loss = mse_loss(x, weights, reduction="none")
+        return torch.sum(loss, dim=1)

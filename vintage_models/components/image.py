@@ -42,9 +42,9 @@ class ImageTargeter(Module):
 
         transforms = (
             (
-                [Resize(size=(self.final_width, self.final_height))]
-                if self._width_in > self.final_height
-                or self._height_in > self.final_height
+                [Resize(size=(self._height_out, self._width_out))]
+                if self._width_in > self._width_out
+                or self._height_in > self._height_out
                 else []
             )
             + (
@@ -59,8 +59,8 @@ class ImageTargeter(Module):
                         padding_mode=self._padding_mode.value,
                     )
                 ]
-                if self._width_in < self.final_height
-                or self._height_in < self.final_height
+                if self._width_in < self._width_out
+                or self._height_in < self._height_out
                 else []
             )
             + ([MaybeToColor()] if color else [Grayscale(1)])

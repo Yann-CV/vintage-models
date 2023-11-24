@@ -66,7 +66,6 @@ class TrainableAddPool2D(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.add_pool_2d(x)
-        print(x.shape)
         for idx, s in enumerate(self.scale):
             x[:, idx, :, :] *= s
             x[:, idx, :, :] *= self.bias[idx]
