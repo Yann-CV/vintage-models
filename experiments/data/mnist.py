@@ -11,6 +11,8 @@ from vintage_models.components.image import MaybeToColor
 
 
 class MNISTDataModule(LightningDataModule):
+    """Data module for MNIST data used during experiments."""
+
     def __init__(
         self,
         data_dir: Path,

@@ -3,6 +3,17 @@ from torch import Tensor, sin, cos, tensor, stack, randn, cat
 
 
 class PositionalEncoding1D(Module):
+    """Positional encoding for 1D sequences hardcoded from sinus and cosinus.
+
+    Note: This module cannot be use as it to process minibatches.
+
+    Attributes:
+        sequence_len: The length of the sequence.
+        n: The number to modulate (manage the period) the cos and sin functions.
+        embedding_len: The length of the embedding.
+        positional_embeddings: The positional embeddings to add to the input.
+    """
+
     def __init__(self, sequence_len: int, n: int, embedding_len: int) -> None:
         super().__init__()
         self.sequence_len = sequence_len
@@ -41,6 +52,17 @@ class PositionalEncoding1D(Module):
 
 
 class LearnablePositionalEncoding1D(Module):
+    """Learnable positional encoding for 1D sequences.
+
+    All positional embedding are initialized with random values. They can then be learned during
+    the training process.
+
+    Attributes:
+        sequence_len: The length of the sequence.
+        embedding_len: The length of the embedding.
+        positional_embeddings: The positional embeddings to add to the input.
+    """
+
     def __init__(self, sequence_len: int, embedding_len: int) -> None:
         super().__init__()
         self.sequence_len = sequence_len

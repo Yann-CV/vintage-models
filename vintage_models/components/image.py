@@ -13,54 +13,51 @@ class ImageTargeter(Module):
     Finally, the image will be converted to grayscale or color if needed.
 
     Attributes:
-        _width_in: Width of the input image.
-        _height_in: Height of the input image.
-        _width_out: Width of the output image.
-        _height_out: Height of the output image.
-        _padding_mode: Padding mode if padding is required.
-        _color: Whether the output image should be color or grayscale.
-
+        in_width: Width of the input image.
+        in_height: Height of the input image.
+        out_width: Width of the output image.
+        out_height: Height of the output image.
+        padding_mode: Padding mode if padding is required.
+        color: Whether the output image should be color or grayscale.
     """
 
     def __init__(
         self,
-        width_in: int,
-        height_in: int,
-        width_out: int,
-        height_out: int,
+        in_width: int,
+        in_height: int,
+        out_width: int,
+        out_height: int,
         padding_mode: PaddingMode = PaddingMode.CONSTANT,
         color: bool = True,
     ) -> None:
         super().__init__()
 
-        self._width_in = width_in
-        self._height_in = height_in
-        self._width_out = width_out
-        self._height_out = height_out
-        self._padding_mode = padding_mode
-        self._color = color
+        self.in_width = in_width
+        self.in_height = in_height
+        self.out_width = out_width
+        self.out_height = out_height
+        self.padding_mode = padding_mode
+        self.color = color
 
         transforms = (
             (
-                [Resize(size=(self._height_out, self._width_out))]
-                if self._width_in > self._width_out
-                or self._height_in > self._height_out
+                [Resize(size=(self.out_height, self.out_width))]
+                if self.in_width > self.out_width or self.in_height > self.out_height
                 else []
             )
             + (
                 [
                     Pad(
                         padding=padding_values_to_be_multiple(
-                            self._width_in, self._width_out
+                            self.in_width, self.out_width
                         )
                         + padding_values_to_be_multiple(
-                            self._height_in, self._height_out
+                            self.in_height, self.out_height
                         ),
-                        padding_mode=self._padding_mode.value,
+                        padding_mode=self.padding_mode.value,
                     )
                 ]
-                if self._width_in < self._width_out
-                or self._height_in < self._height_out
+                if self.in_width < self.out_width or self.in_height < self.out_height
                 else []
             )
             + ([MaybeToColor()] if color else [Grayscale(1)])
@@ -69,23 +66,11 @@ class ImageTargeter(Module):
             None if not transforms else Compose(transforms)
         )
 
-    @property
-    def width_in(self) -> int:
-        return self._width_in
-
-    @property
-    def height_in(self) -> int:
-        return self._height_in
-
-    @property
-    def padding_mode(self) -> PaddingMode:
-        return self._padding_mode
-
     def forward(self, x: Tensor) -> Tensor:
-        if x.shape[-1] != self._width_in or x.shape[-2] != self._height_in:
+        if x.shape[-1] != self.in_width or x.shape[-2] != self.in_height:
             raise ValueError(
                 f"Input image shape {x.shape} does not match expected shape "
-                f"({self._width_in}, {self._height_in})"
+                f"({self.in_width}, {self.in_height})"
             )
 
         if self.transforms is not None:

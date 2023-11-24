@@ -3,6 +3,17 @@ from torch import Tensor, matmul, softmax, cat
 
 
 class ScaledDotProductAttention(Module):
+    """Scaled dot product attention.
+
+    The queries and keys are multiplied together, then scaled and finally softmaxed to make
+    the weighted sum over values.
+
+    Attributes:
+        dk: The length of the keys and queries.
+        qvk_module: is True because this module is requesting queries, keys and values
+        in the forward method.
+    """
+
     def __init__(self, dk: int) -> None:
         super().__init__()
         self.dk = dk
@@ -21,6 +32,19 @@ class ScaledDotProductAttention(Module):
 
 
 class HeadAttention(Module):
+    """Head attention linearizing queries, keys and values before applying scaled dot product attention.
+
+    Attributes:
+        dk: The length of the keys and queries.
+        dv: The length of the values.
+        qvk_module: is True because this module is requesting queries, keys and values
+        in the forward method.
+        k_linear: Linear layer for linearizing keys.
+        q_linear: Linear layer for linearizing queries.
+        v_linear: Linear layer for linearizing values.
+        attention: Scaled dot product attention module.
+    """
+
     def __init__(self, dk: int, dv: int) -> None:
         super().__init__()
         self.dk = dk

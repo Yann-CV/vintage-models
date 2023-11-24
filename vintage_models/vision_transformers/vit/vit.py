@@ -10,6 +10,17 @@ from vintage_models.utility.transform import PaddingMode
 
 
 class ViTEncoder(Module):
+    """Encoder of the Vision Transformer ViT.
+
+    Attributes:
+        layer_count: The number of layers to apply.
+        head_count: The number of attention heads to use in each layer.
+        embedding_len: The length of the embedding.
+        mlp_hidden_size: The size of the hidden layer of the MLP.
+        self_attention_residual: The residual module for the self attention (attention plus normalization).
+        mlp_residual: The residual module for the MLP (mlp plus normalization).
+    """
+
     def __init__(
         self,
         layer_count: int,
@@ -47,6 +58,21 @@ class ViTEncoder(Module):
 
 
 class ViTEmbedder(Module):
+    """Embedder of the Vision Transformer ViT.
+
+    Allow to pass from the image to the patch tokens (classification token included). Each patch
+    token has a learnable positional encoding included.
+
+    Attributes:
+        patch_size: The size of the patch to use.
+        image_width: The width of the image.
+        image_height: The height of the image.
+        embedding_len: The length of the embedding.
+        linear: The linear layer to apply to the patches.
+        positional_encoding: The positional encoding to apply to the patches.
+        cls_token: The token to use for classification.
+    """
+
     def __init__(
         self,
         patch_size: int,
@@ -79,6 +105,11 @@ class ViTEmbedder(Module):
 
 
 class ViT(Module):
+    """Vintage implementation of the ViT model.
+
+    See the paper_review.md file for more information.
+    """
+
     def __init__(
         self,
         patch_size: int,
