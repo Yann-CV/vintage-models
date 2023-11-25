@@ -16,6 +16,8 @@ from torchmetrics.classification import (
 
 
 class ImageClassifier(LightningModule):
+    """Lightning module for image classification experiments."""
+
     def __init__(self, model: Module) -> None:
         super().__init__()
         self.model = model
