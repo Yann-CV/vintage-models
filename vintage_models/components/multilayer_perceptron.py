@@ -33,6 +33,16 @@ class TwoLayerMLP(Module):
         return self.model(x)
 
 
+class LinearWithActivation(Module):
+    def __init__(self, in_size: int, out_size: int, activation_layer: Module) -> None:
+        super().__init__()
+        self.linear = Linear(in_size, out_size)
+        self.activation = activation_layer
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.activation(self.linear(x))
+
+
 class TwoLayerGeluMLP(Module):
     """Two layer multilayer perceptron with GELU activation function.
 

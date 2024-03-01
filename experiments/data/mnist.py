@@ -19,6 +19,7 @@ class MNISTDataModule(LightningDataModule):
         train_batch_size: int = 64,
         test_batch_size: int = 1,
         color: bool = True,
+        between_0_and_1: bool = False,
     ) -> None:
         super().__init__()
         self.data_dir = data_dir
@@ -30,11 +31,15 @@ class MNISTDataModule(LightningDataModule):
         transform = [
             ToImage(),
             ToDtype(torch.float32, scale=True),
-            Normalize((0.1307,), (0.3081,)),
-        ]
+        ] + (
+            [
+                Normalize((0.1307,), (0.3081,)),
+            ]
+            if not between_0_and_1
+            else []
+        )
         if color:
             transform.append(MaybeToColor())
-
         self.transform = Compose(transform)
 
         self.mnist_val: MNIST

@@ -118,6 +118,6 @@ class LeNet5(Module):
         return (
             f"lenet5-classcount{self.class_count}-"
             f"paddingmode{self.image_targeter.padding_mode.value}-"
-            f"width_in{self.image_targeter.width_in}-"
-            f"height_in{self.image_targeter.height_in}"
+            f"width_in{self.image_targeter.in_width}-"
+            f"height_in{self.image_targeter.in_height}"
         )

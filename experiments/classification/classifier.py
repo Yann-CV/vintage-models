@@ -35,7 +35,7 @@ class ImageClassifier(LightningModule):
         self.validation_step_outputs: list[tuple[Tensor, Tensor]] = []
         self.test_step_outputs: list[tuple[Tensor, Tensor]] = []
 
-    def training_step(self, batch: Tensor) -> Tensor:
+    def training_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, target = batch
         preds = self.model(data)
         loss = nll_loss(preds, target)
@@ -51,7 +51,7 @@ class ImageClassifier(LightningModule):
         )
         self.training_step_outputs.clear()
 
-    def validation_step(self, batch: Tensor) -> Mapping[str, Tensor]:
+    def validation_step(self, batch: tuple[Tensor, Tensor]) -> Mapping[str, Tensor]:
         data, target = batch
         preds = self.model(data)
         self.validation_step_outputs.append((preds, target))
@@ -64,7 +64,7 @@ class ImageClassifier(LightningModule):
         self.metrics.reset()
         self.log_dict(metric_results, prog_bar=True, logger=True)
 
-    def test_step(self, batch: Tensor) -> Mapping[str, Tensor]:
+    def test_step(self, batch: tuple[Tensor, Tensor]) -> Mapping[str, Tensor]:
         data, target = batch
         preds = self.model(data)
         self.test_step_outputs.append((preds, target))
