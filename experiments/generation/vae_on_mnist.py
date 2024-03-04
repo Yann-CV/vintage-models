@@ -8,7 +8,7 @@ from experiments.generation.generator import ImageGenerator
 from vintage_models.autoencoder.vae.vae import Vae
 
 
-EPOCH_COUNT = 100
+EPOCH_COUNT = 200
 MODEL = Vae(
     image_width=28,
     image_height=28,

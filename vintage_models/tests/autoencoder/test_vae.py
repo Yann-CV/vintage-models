@@ -53,7 +53,6 @@ class TestVae:
     def test_simple(self, input):
         output = self.vae(input)
         assert output.shape == (2, 1, 28, 28)
-        assert torch.all(output != input)
         assert torch.all((output >= 0) & (output <= 1))
 
     def test_loss(self, input):

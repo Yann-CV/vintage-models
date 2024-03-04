@@ -1,13 +1,31 @@
 from functools import partial
 
 from torch import Tensor, reshape, tensor, normal, device as torch_device, randn, log
-from torch.nn import Module, Linear, Tanh, Softplus
+from torch.nn import Module, Linear, Tanh, Softplus, Sequential
 from torch.nn.functional import binary_cross_entropy, sigmoid
 
 from vintage_models.components.multilayer_perceptron import LinearWithActivation
 
 
 class VaeEncoder(Module):
+    """Encoder for the vintage variational autoencoder.
+
+    The input image is unrolled as a vector before going through the network. Its
+    values are expected to be between 0 and 1.
+
+    Attributes:
+        image_width: Width of the input image.
+        image_height: Height of the input image.
+        hidden_size: Size of the hidden layer (after application of the linear and activation layer).
+        latent_size: Size of the latent space.
+        to_vector: Function to unroll the input image as a vector.
+        linear_with_tanh: Linear layer followed by a tanh activation layer.
+        std_linear: Linear layer followed by a softplus activation layer allowing to compute the
+        standard deviation for the latent space distribution.
+        mean_linear: Linear layer to compute the mean for the latent space distribution.
+        _epsilon: Small value to avoid zero standard deviation.
+    """
+
     def __init__(
         self,
         image_width: int,
@@ -15,7 +33,20 @@ class VaeEncoder(Module):
         hidden_size: int,
         latent_size: int,
     ) -> None:
+        """Initializes the VaeEncoder.
+
+        Args:
+            image_width: Width of the ouput image.
+            image_height: Height of the ouput image.
+            hidden_size: Size of the hidden layer (after application of the linear and activation layer).
+            latent_size: Size of the latent layer.
+        """
         super().__init__()
+        self.image_width = image_width
+        self.image_height = image_height
+        self.hidden_size = hidden_size
+        self.latent_size = latent_size
+
         in_size = image_width * image_height
         self.to_vector = partial(reshape, shape=(-1, in_size))
 
@@ -46,6 +77,23 @@ class VaeEncoder(Module):
 
 
 class VaeDecoder(Module):
+    """Decoder for the vintage variational autoencoder.
+
+    The values of the generated images are between 0 and 1.
+
+    Attributes:
+        image_width: Width of the output image.
+        image_height: Height of the output image.
+        hidden_size: Size of the hidden layer (after application of the linear and activation layer).
+        latent_size: Size of the latent layer.
+        linear_with_tanh: Linear layer followed by a tanh activation layer.
+        std_linear: Linear layer followed by a softplus activation layer allowing to compute the
+        standard deviation for the image generation space distribution.
+        mean_linear: Linear layer to compute the mean for the image generation space distribution.
+        _epsilon: Small value to avoid zero standard deviation.
+        to_image: Function to reshape the output vector as an image.
+    """
+
     def __init__(
         self,
         image_width: int,
@@ -53,7 +101,21 @@ class VaeDecoder(Module):
         hidden_size: int,
         latent_size: int,
     ) -> None:
+        """Initializes the VaeDecoder.
+
+        Args:
+            image_width: Width of the ouput image.
+            image_height: Height of the ouput image.
+            hidden_size: Size of the hidden layer (after application of the linear and activation layer).
+            latent_size: Size of the latent layer.
+        """
         super().__init__()
+
+        self.image_width = image_width
+        self.image_height = image_height
+        self.hidden_size = hidden_size
+        self.latent_size = latent_size
+
         self.linear_with_tanh = LinearWithActivation(
             in_size=latent_size, out_size=hidden_size, activation_layer=Tanh()
         )
@@ -79,6 +141,21 @@ class VaeDecoder(Module):
 
 
 class Vae(Module):
+    """Vintage implementation of the variational autoencoder.
+
+    See the paper_review.md file for more information.
+
+    In the encoder, the input image is unrolled as a vector before going through the network.
+    The image generation is done from sampling a normal distribution and passing it through the decoder.
+
+    The input image values are expected to be between 0 and 1. likewise, the generated image values
+    will be between 0 and 1.
+
+    Attributes:
+        model: Sequential model composed of the encoder and the decoder.
+        device: Device on which the model is run.
+    """
+
     def __init__(
         self,
         image_width: int,
@@ -87,18 +164,21 @@ class Vae(Module):
         latent_size: int,
         device: str | torch_device | int = "cpu",
     ) -> None:
+        """Initializes the Vae.
+
+        Args:
+            image_width: Width of the input and ouput images.
+            image_height: Height of the input and ouput images.
+            hidden_size: Size of the hidden layer (after application of the linear and activation layer).
+            latent_size: Size of the latent layer.
+        """
         super().__init__()
-        self.latent_size = latent_size
-        self.image_width = image_width
-        self.image_height = image_height
-        self.hidden_size = hidden_size
         self.device = torch_device(device)
-        self.encoder = VaeEncoder(
-            image_width, image_height, hidden_size, latent_size
-        ).to(device)
-        self.decoder = VaeDecoder(
-            image_width, image_height, hidden_size, latent_size
-        ).to(device)
+        self.model = Sequential(
+            VaeEncoder(image_width, image_height, hidden_size, latent_size),
+            VaeDecoder(image_width, image_height, hidden_size, latent_size),
+        )
+        self.model.to(self.device)
 
     def forward(self, x: Tensor) -> Tensor:
         encoded = self.encoder(x)
@@ -124,6 +204,6 @@ class Vae(Module):
 
     def __str__(self) -> str:
         return (
-            f"VAE_image_width_{self.image_width}_image_height_{self.image_height}"
-            f"_hidden_size_{self.hidden_size}_latent_size_{self.latent_size}"
+            f"VAE_image_width_{self.encoder.image_width}_image_height_{self.encoder.image_height}"
+            f"_hidden_size_{self.encoder.hidden_size}_latent_size_{self.encoder.latent_size}"
         )

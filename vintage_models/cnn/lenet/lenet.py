@@ -14,7 +14,7 @@ class LeNet5(Module):
 
     See the paper_review.md file for more information.
 
-    If the input image is 32x32 then it will either be padded or resized to 32x32.
+    If the input image is not 32x32 then it will either be padded or resized to 32x32.
 
     The class vector is computed from the softmax applied on the RBF layer.
 
