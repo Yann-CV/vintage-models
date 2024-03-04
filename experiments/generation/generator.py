@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Mapping
 
 from lightning import LightningModule
+from lightning.pytorch.loggers import MLFlowLogger
 from torch import Tensor
 from torch.optim import SGD
 
@@ -34,7 +34,7 @@ class ImageGenerator(LightningModule):
         )
         self.training_step_outputs.clear()
 
-    def validation_step(self, batch: tuple[Tensor, Tensor]) -> Mapping[str, Tensor]:
+    def validation_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, _ = batch
         loss = self.model.loss(data)
         self.validation_step_outputs.append(loss)
@@ -56,6 +56,7 @@ class ImageGenerator(LightningModule):
         return generated
 
     def on_test_epoch_end(self) -> None:
+        assert isinstance(self.logger, MLFlowLogger)
         saving_path = Path("/storage/ml") / str(self.logger.experiment_id) / "generated"
         if not saving_path.exists():
             saving_path.mkdir(parents=True, exist_ok=True)

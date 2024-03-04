@@ -2,7 +2,6 @@ from functools import partial
 
 import torch
 from torch import Tensor
-from torch.distributions import Normal
 from torch.nn import Module, Linear, Tanh, Softplus
 from torch.nn.functional import binary_cross_entropy, sigmoid
 
@@ -108,7 +107,7 @@ class Vae(Module):
         encoded = self.encoder(x)
         return self.decoder(encoded)
 
-    def loss(self, x: Tensor) -> Normal:
+    def loss(self, x: Tensor) -> Tensor:
         reconstructed = self.forward(x)
 
         vector_size = x.size(-1) * x.size(-2)
