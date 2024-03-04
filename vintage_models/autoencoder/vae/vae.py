@@ -1,7 +1,7 @@
 from functools import partial
 
 from torch import Tensor, reshape, tensor, normal, device as torch_device, randn, log
-from torch.nn import Module, Linear, Tanh, Softplus, Sequential
+from torch.nn import Module, Linear, Tanh, Softplus
 from torch.nn.functional import binary_cross_entropy, sigmoid
 
 from vintage_models.components.multilayer_perceptron import LinearWithActivation
@@ -152,7 +152,8 @@ class Vae(Module):
     will be between 0 and 1.
 
     Attributes:
-        model: Sequential model composed of the encoder and the decoder.
+        encoder: Encoder for the variational autoencoder. Tranforms the image toward the latent space.
+        decoder: Decoder for the variational autoencoder. Tranforms the latent space toward the image space.
         device: Device on which the model is run.
     """
 
@@ -174,11 +175,12 @@ class Vae(Module):
         """
         super().__init__()
         self.device = torch_device(device)
-        self.model = Sequential(
-            VaeEncoder(image_width, image_height, hidden_size, latent_size),
-            VaeDecoder(image_width, image_height, hidden_size, latent_size),
-        )
-        self.model.to(self.device)
+        self.encoder = VaeEncoder(
+            image_width, image_height, hidden_size, latent_size
+        ).to(self.device)
+        self.decoder = VaeDecoder(
+            image_width, image_height, hidden_size, latent_size
+        ).to(self.device)
 
     def forward(self, x: Tensor) -> Tensor:
         encoded = self.encoder(x)
