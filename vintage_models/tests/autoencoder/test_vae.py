@@ -21,10 +21,6 @@ class TestVaeEncoder:
         output = self.encoder(input)
         assert output.shape == (2, 2)
 
-    def test_distribution_from_sample(self, input):
-        distribution = self.encoder.distribution_from_sample(input)
-        assert distribution.sample().shape == (2, 2)
-
     def test_wrong_input_size(self, input):
         with pytest.raises(RuntimeError):
             self.encoder(torch.zeros(4, 1, 28, 29))
@@ -64,6 +60,10 @@ class TestVae:
         loss = self.vae.loss(input)
         assert isinstance(loss, torch.Tensor)
         assert loss.ndim == 0
+
+    def test_generate(self, input):
+        generated = self.vae.generate(2)
+        assert generated.shape == (2, 1, 28, 28)
 
     def test_wrong_input_size(self, input):
         with pytest.raises(RuntimeError):

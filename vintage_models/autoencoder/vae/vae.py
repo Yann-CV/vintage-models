@@ -89,14 +89,14 @@ class Vae(Module):
         image_height: int,
         hidden_size: int,
         latent_size: int,
-        device: str | torch.device | int = "cuda",
+        device: str | torch.device | int = "cpu",
     ) -> None:
         super().__init__()
         self.latent_size = latent_size
         self.image_width = image_width
         self.image_height = image_height
         self.hidden_size = hidden_size
-        self.device = device
+        self.device = torch.device(device)
         self.encoder = VaeEncoder(
             image_width, image_height, hidden_size, latent_size
         ).to(device)
