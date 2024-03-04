@@ -38,6 +38,7 @@ DATAMODULE = MNISTDataModule(
     train_batch_size=500,
     color=False,
     between_0_and_1=True,
+    num_workers=11,
 )
 
 DATAMODULE.prepare_data()

@@ -14,7 +14,7 @@ class ImageGenerator(LightningModule):
     def __init__(self, model: Vae) -> None:
         super().__init__()
         self.model = model
-        self.optimizer = SGD(self.model.parameters(), lr=0.1)
+        self.optimizer = SGD(self.model.parameters(), lr=0.01)
         self.training_step_outputs: list[Tensor] = []
         self.validation_step_outputs: list[Tensor] = []
         self.test_step_outputs: list[Tensor] = []
