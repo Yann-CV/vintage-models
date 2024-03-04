@@ -30,6 +30,11 @@ of image recognition techniques.
 et al. demonstrated the effectiveness of using transformer architectures for image classification
 tasks, challenging the dominance of convolutional neural networks.
 
+### Autoencoder
+
+- Variational Autoencoder (VAE): VAEs, introduced for image generation by Kingma and Welling in 2013,
+are probabilistic generative models. VAEs learn a probabilistic mapping from the input space to a
+latent space, enabling the generation of new samples by sampling from the latent space.
 
 ## How to run the code
 
@@ -88,10 +93,6 @@ The list as been created from prompting OpenAI ChatGpt regarding the most famous
 - AlexNet (2012): AlexNet, designed by Alex Krizhevsky, Ilya Sutskever, and Geoffrey Hinton,
 was a milestone in the ImageNet Large Scale Visual Recognition Challenge (ILSVRC) in 2012.
 It popularized the use of deep convolutional neural networks for image classification tasks.
-
-- Variational Autoencoder (VAE): VAEs, introduced for image generation by Kingma and Welling in 2013,
-are probabilistic generative models. VAEs learn a probabilistic mapping from the input space to a
-latent space, enabling the generation of new samples by sampling from the latent space.
 
 - Generative Adversarial Network (GAN): GANs, introduced by Ian Goodfellow and his colleagues
 in 2014, have become one of the most influential and popular models for image generation.
