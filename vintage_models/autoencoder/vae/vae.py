@@ -20,8 +20,8 @@ class VaeEncoder(Module):
         latent_size: Size of the latent space.
         to_vector: Function to unroll the input image as a vector.
         linear_with_tanh: Linear layer followed by a tanh activation layer.
-        std_linear: Linear layer followed by a softplus activation layer allowing to compute the
-        standard deviation for the latent space distribution.
+        log_var_linear: Linear layer allowing to compute the
+        log of the variance for the latent space distribution.
         mean_linear: Linear layer to compute the mean for the latent space distribution.
     """
 
@@ -52,7 +52,7 @@ class VaeEncoder(Module):
         self.linear_with_tanh = LinearWithActivation(
             in_size=in_size, out_size=hidden_size, activation_layer=Tanh()
         )
-        self.std_linear = Linear(hidden_size, latent_size)
+        self.log_var_linear = Linear(hidden_size, latent_size)
         self.mean_linear = Linear(hidden_size, latent_size)
 
     def compute_mean_and_log_var(self, x: Tensor) -> tuple[Tensor, Tensor]:
@@ -62,7 +62,7 @@ class VaeEncoder(Module):
         activated = self.linear_with_tanh(self.to_vector(x))
 
         mean = self.mean_linear(activated)
-        log_var = self.std_linear(activated)
+        log_var = self.log_var_linear(activated)
 
         return mean, log_var
 
@@ -126,7 +126,7 @@ class VaeDecoder(Module):
 
 
 class Vae(Module):
-    """Vintage implementation of the variationcpual autoencoder.
+    """Vintage implementation of the variational autoencoder.
 
     See the paper_review.md file for more information.
 
@@ -139,8 +139,6 @@ class Vae(Module):
     Attributes:
         encoder: Encoder for the variational autoencoder. Tranforms the image toward the latent space.
         decoder: Decoder for the variational autoencoder. Tranforms the latent space toward the image space.
-        latent_size: Size of the latent space used to generate images.
-        device: Device on which the model is run.
     """
 
     def __init__(
@@ -197,7 +195,7 @@ class Vae(Module):
         return loss
 
     def generate(self, n: int) -> Tensor:
-        return self.decoder(randn(n, self.latent_size, device=self.device))
+        return self.decoder(randn(n, self.decoder.latent_size, device=self.device))
 
     def __str__(self) -> str:
         return (
