@@ -18,3 +18,4 @@ taken from [YouTube](https://www.youtube.com/watch?v=5WoItGTWV54)
 - Lecture Collection. Convolutional Neural Networks for Visual Recognition (Spring 2017).
   Lecture 13 | Generative Models. Stanford University. [YouTube](https://www.youtube.com/watch?v=5WoItGTWV54)
 - Variational Autoencoders. Arxiv Insights. [YouTube](https://www.youtube.com/watch?v=9zKuYvjFFS8)
+- Implementing Variational Autoencoders from scratch. [Medium](https://medium.com/@sofeikov/implementing-variational-autoencoders-from-scratch-533782d8eb95)
