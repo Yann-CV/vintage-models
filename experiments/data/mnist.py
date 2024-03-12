@@ -18,7 +18,9 @@ class MNISTDataModule(LightningDataModule):
         data_dir: Path,
         train_batch_size: int = 64,
         test_batch_size: int = 1,
+        num_workers: int = 11,
         color: bool = True,
+        between_0_and_1: bool = False,
     ) -> None:
         super().__init__()
         self.data_dir = data_dir
@@ -26,15 +28,20 @@ class MNISTDataModule(LightningDataModule):
         self.class_count = 10
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
+        self.num_workers = num_workers
 
         transform = [
             ToImage(),
             ToDtype(torch.float32, scale=True),
-            Normalize((0.1307,), (0.3081,)),
-        ]
+        ] + (
+            [
+                Normalize((0.1307,), (0.3081,)),
+            ]
+            if not between_0_and_1
+            else []
+        )
         if color:
             transform.append(MaybeToColor())
-
         self.transform = Compose(transform)
 
         self.mnist_val: MNIST
@@ -59,10 +66,22 @@ class MNISTDataModule(LightningDataModule):
             )
 
     def train_dataloader(self):
-        return DataLoader(self.mnist_train, batch_size=self.train_batch_size)
+        return DataLoader(
+            self.mnist_train,
+            batch_size=self.train_batch_size,
+            num_workers=self.num_workers,
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.mnist_val, batch_size=self.train_batch_size)
+        return DataLoader(
+            self.mnist_val,
+            batch_size=self.train_batch_size,
+            num_workers=self.num_workers,
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.mnist_test, batch_size=self.test_batch_size)
+        return DataLoader(
+            self.mnist_test,
+            batch_size=self.test_batch_size,
+            num_workers=self.num_workers,
+        )
