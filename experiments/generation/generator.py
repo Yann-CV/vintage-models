@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from lightning import LightningModule
-from lightning.pytorch.loggers import MLFlowLogger
+from pytorch_lightning.loggers import MLFlowLogger
 from torch import Tensor
-from torch.optim import SGD
+from torch.optim import Adam
 
 from vintage_models.autoencoder.vae.vae import Vae
 
@@ -14,7 +14,7 @@ class ImageGenerator(LightningModule):
     def __init__(self, model: Vae) -> None:
         super().__init__()
         self.model = model
-        self.optimizer = SGD(self.model.parameters(), lr=0.01)
+        self.optimizer = Adam(self.model.parameters(), lr=1e-3)
         self.training_step_outputs: list[Tensor] = []
         self.validation_step_outputs: list[Tensor] = []
         self.test_step_outputs: list[Tensor] = []
@@ -51,7 +51,7 @@ class ImageGenerator(LightningModule):
 
     def test_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, _ = batch
-        generated = self.model.generate(data.size(0))
+        generated = self.model.generate(1)
         self.test_step_outputs.append(generated)
         return generated
 

@@ -1,8 +1,8 @@
 from functools import partial
 
-from torch import Tensor, reshape, tensor, normal, device as torch_device, randn, log
-from torch.nn import Module, Linear, Tanh, Softplus
-from torch.nn.functional import binary_cross_entropy, sigmoid
+from torch import Tensor, reshape, device as torch_device, randn, randn_like, exp
+from torch.nn import Module, Linear, Tanh, ReLU, Sigmoid
+from torch.nn.functional import binary_cross_entropy
 
 from vintage_models.components.multilayer_perceptron import LinearWithActivation
 
@@ -23,7 +23,6 @@ class VaeEncoder(Module):
         std_linear: Linear layer followed by a softplus activation layer allowing to compute the
         standard deviation for the latent space distribution.
         mean_linear: Linear layer to compute the mean for the latent space distribution.
-        _epsilon: Small value to avoid zero standard deviation.
     """
 
     def __init__(
@@ -53,27 +52,24 @@ class VaeEncoder(Module):
         self.linear_with_tanh = LinearWithActivation(
             in_size=in_size, out_size=hidden_size, activation_layer=Tanh()
         )
-        self.std_linear = LinearWithActivation(
-            in_size=hidden_size, out_size=latent_size, activation_layer=Softplus()
-        )
+        self.std_linear = Linear(hidden_size, latent_size)
         self.mean_linear = Linear(hidden_size, latent_size)
 
-        self._epsilon = tensor(1e-6)
-
-    def compute_mean_and_std(self, x: Tensor) -> tuple[Tensor, Tensor]:
+    def compute_mean_and_log_var(self, x: Tensor) -> tuple[Tensor, Tensor]:
         if x.size(-3) != 1:
             raise ValueError(f"Expected the input to have 1 channel, got {x.size(-3)}")
 
         activated = self.linear_with_tanh(self.to_vector(x))
 
         mean = self.mean_linear(activated)
-        std = self._epsilon + 10 ** self.std_linear(activated)
+        log_var = self.std_linear(activated)
 
-        return mean, std
+        return mean, log_var
 
     def forward(self, x: Tensor) -> Tensor:
-        mean, std = self.compute_mean_and_std(x)
-        return mean + std * normal(mean=0, std=1, size=std.size(), device=std.device)
+        mean, log_var = self.compute_mean_and_log_var(x)
+        std = exp(0.5 * log_var)
+        return mean + std * randn_like(std)
 
 
 class VaeDecoder(Module):
@@ -84,13 +80,10 @@ class VaeDecoder(Module):
     Attributes:
         image_width: Width of the output image.
         image_height: Height of the output image.
-        hidden_size: Size of the hidden layer (after application of the linear and activation layer).
+        hidden_size: Size of the hidden layer.
         latent_size: Size of the latent layer.
-        linear_with_tanh: Linear layer followed by a tanh activation layer.
-        std_linear: Linear layer followed by a softplus activation layer allowing to compute the
-        standard deviation for the image generation space distribution.
-        mean_linear: Linear layer to compute the mean for the image generation space distribution.
-        _epsilon: Small value to avoid zero standard deviation.
+        linear_with_relu: Linear layer followed by a relu activation layer (from latent to hidden).
+        linear_with_sigmoid: Linear layer followed by a sigmoid activation layer (from hidden to image).
         to_image: Function to reshape the output vector as an image.
     """
 
@@ -116,32 +109,24 @@ class VaeDecoder(Module):
         self.hidden_size = hidden_size
         self.latent_size = latent_size
 
-        self.linear_with_tanh = LinearWithActivation(
-            in_size=latent_size, out_size=hidden_size, activation_layer=Tanh()
+        self.linear_with_relu = LinearWithActivation(
+            in_size=latent_size, out_size=hidden_size, activation_layer=ReLU()
         )
-
         out_size = image_width * image_height
-        self.std_linear = LinearWithActivation(
-            in_size=hidden_size, out_size=out_size, activation_layer=Softplus()
+        self.linear_with_sigmoid = LinearWithActivation(
+            in_size=hidden_size, out_size=out_size, activation_layer=Sigmoid()
         )
-        self.mean_linear = Linear(hidden_size, out_size)
 
         self.to_image = partial(reshape, shape=(-1, 1, image_width, image_height))
-        self._epsilon = tensor(1e-6)
 
     def forward(self, x: Tensor) -> Tensor:
-        activated = self.linear_with_tanh(x)
-        mean = self.mean_linear(activated)
-        std = self._epsilon + 10 ** self.std_linear(activated)
-
-        random_value = normal(mean=0, std=1, size=std.size(), device=std.device)
-        sampled = sigmoid(mean + std * random_value)
+        sampled = self.linear_with_sigmoid(self.linear_with_relu(x))
 
         return self.to_image(sampled)
 
 
 class Vae(Module):
-    """Vintage implementation of the variational autoencoder.
+    """Vintage implementation of the variationcpual autoencoder.
 
     See the paper_review.md file for more information.
 
@@ -194,16 +179,22 @@ class Vae(Module):
         reconstructed = self.forward(x)
 
         vector_size = x.size(-1) * x.size(-2)
-        reconstruction_loss = binary_cross_entropy(
-            reconstructed.reshape(-1, vector_size),
-            x.reshape(-1, vector_size),
-            reduction="none",
+        reconstruction_loss = (
+            binary_cross_entropy(
+                reconstructed,
+                x,
+                reduction="none",
+            )
+            .reshape(-1, vector_size)
+            .sum(dim=1)
         )
 
-        mean, std = self.encoder.compute_mean_and_std(x)
-        kl_div = 0.5 * (mean.pow(2) + std - log(std) - 1)
+        mean, log_var = self.encoder.compute_mean_and_log_var(x)
+        kl_div = -0.5 * (1 + log_var - log_var.exp() - mean.pow(2)).sum(dim=1)
 
-        return reconstruction_loss.sum(dim=1).mean() + kl_div.sum(dim=1).mean()
+        loss = kl_div.mean() + reconstruction_loss.mean()
+
+        return loss
 
     def generate(self, n: int) -> Tensor:
         return self.decoder(randn(n, self.latent_size, device=self.device))

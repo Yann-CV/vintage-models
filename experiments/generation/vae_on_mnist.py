@@ -8,12 +8,13 @@ from experiments.generation.generator import ImageGenerator
 from vintage_models.autoencoder.vae.vae import Vae
 
 
-EPOCH_COUNT = 200
+EPOCH_COUNT = 30
 MODEL = Vae(
     image_width=28,
     image_height=28,
-    hidden_size=28,
-    latent_size=2,
+    hidden_size=500,
+    latent_size=200,
+    device="cuda",
 )
 
 GENERATOR = ImageGenerator(MODEL)
