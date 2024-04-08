@@ -24,6 +24,11 @@ The list as been created from prompting OpenAI ChatGpt regarding the most famous
 convolutional neural networks (CNNs) and played a crucial role in the development
 of image recognition techniques.
 
+- Generative Adversarial Network (GAN): GANs, introduced by Ian Goodfellow and his colleagues
+in 2014, have become one of the most influential and popular models for image generation.
+GANs consist of a generator network and a discriminator network that are trained adversarially,
+leading to the generation of realistic images.
+
 ### Transformers
 
 - ViT (Vision Transformer) (2020): The original Vision Transformer introduced by Alexey Dosovitskiy
@@ -93,11 +98,6 @@ The list as been created from prompting OpenAI ChatGpt regarding the most famous
 - AlexNet (2012): AlexNet, designed by Alex Krizhevsky, Ilya Sutskever, and Geoffrey Hinton,
 was a milestone in the ImageNet Large Scale Visual Recognition Challenge (ILSVRC) in 2012.
 It popularized the use of deep convolutional neural networks for image classification tasks.
-
-- Generative Adversarial Network (GAN): GANs, introduced by Ian Goodfellow and his colleagues
-in 2014, have become one of the most influential and popular models for image generation.
-GANs consist of a generator network and a discriminator network that are trained adversarially,
-leading to the generation of realistic images.
 
 - GoogleNet (Inception) (2014): The Inception architecture, also known as GoogleNet, introduced the
 concept of inception modules and significantly improved the efficiency and performance

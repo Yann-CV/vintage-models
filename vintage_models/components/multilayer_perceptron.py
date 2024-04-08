@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from torch.nn import Module, Linear, GELU, Sequential
-from torch import Tensor
+from torch import Tensor, stack
 
 
 class TwoLayerMLP(Module):
@@ -41,6 +41,27 @@ class LinearWithActivation(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return self.activation(self.linear(x))
+
+
+class MaxOut(Module):
+    """Maxout layer
+
+    The maxout layer is taking the maximum value of the hidden linear layers applied
+    to the input.
+
+    See the `Maxout networks` paper for more details.
+    """
+
+    def __init__(self, in_features: int, out_features: int, maxout_depth: int) -> None:
+        super().__init__()
+        self.linears = [
+            Linear(in_features=in_features, out_features=out_features)
+            for _ in range(maxout_depth)
+        ]
+
+    def forward(self, x: Tensor) -> Tensor:
+        linear_outputs = stack([linear(x) for linear in self.linears], dim=2)
+        return linear_outputs.max(dim=2).values
 
 
 class TwoLayerGeluMLP(Module):
