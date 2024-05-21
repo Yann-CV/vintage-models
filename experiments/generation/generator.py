@@ -108,7 +108,7 @@ class ImageAdversarialGenerator(LightningModule):
             logger=True,
         )
         self.log(
-            "training_generator_loss",
+            "training_discriminator_loss",
             discriminator_loss,
             prog_bar=True,
             logger=True,
@@ -137,7 +137,7 @@ class ImageAdversarialGenerator(LightningModule):
             logger=True,
         )
         self.log(
-            "val_generator_loss",
+            "val_discriminator_loss",
             discriminator_loss,
             prog_bar=True,
             logger=True,
