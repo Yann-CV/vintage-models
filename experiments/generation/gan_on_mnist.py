@@ -1,26 +1,29 @@
 from pathlib import Path
 
+import torch.cuda
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import MLFlowLogger
 from experiments.data.mnist import MNISTDataModule
-from experiments.generation.generator import ImageAutoEncoderGenerator
-from vintage_models.autoencoder.vae.vae import Vae
+from experiments.generation.generator import ImageAdversarialGenerator
+from vintage_models.adversarial.gan.gan import Gan
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-EPOCH_COUNT = 30
-MODEL = Vae(
+EPOCH_COUNT = 100
+MODEL = Gan(
     image_width=28,
     image_height=28,
     hidden_size=500,
     latent_size=200,
-    device="cuda",
+    maxout_depth=3,
+    device=DEVICE,
 )
 
-GENERATOR = ImageAutoEncoderGenerator(MODEL)
+GENERATOR = ImageAdversarialGenerator(MODEL)
 
 LOGGER = MLFlowLogger(
-    experiment_name="VAE on MNIST",
+    experiment_name="GAN on MNIST",
     tracking_uri="/storage/ml/mlruns",
     run_name=str(MODEL),
     log_model=True,
@@ -45,7 +48,7 @@ DATAMODULE = MNISTDataModule(
 DATAMODULE.prepare_data()
 DATAMODULE.setup("fit")
 TRAINER = Trainer(
-    accelerator="cuda",
+    accelerator=DEVICE,
     callbacks=[CHECKPOINT_CALLBACK],
     logger=LOGGER,
     max_epochs=EPOCH_COUNT,

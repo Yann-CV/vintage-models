@@ -14,3 +14,5 @@ Goodfellow, I., Pouget-Abadie, J., Mirza, M., Xu, B., Warde-Farley, D., Ozair, S
 
 
 # Interesting resources
+
+- [Official github repository](https://github.com/goodfeli/adversarial) by Ian GoodFellow

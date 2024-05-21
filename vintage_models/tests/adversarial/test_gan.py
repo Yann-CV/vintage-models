@@ -1,7 +1,12 @@
 import pytest
 import torch
 
-from vintage_models.adversarial.gan.gan import GanDiscriminator, GanGenerator, Gan
+from vintage_models.adversarial.gan.gan import (
+    GanDiscriminator,
+    GanGenerator,
+    Gan,
+    GanLosses,
+)
 
 
 @pytest.fixture
@@ -49,3 +54,11 @@ class TestGan:
     def test_generate(self, input):
         generated = self.gan.generate(2)
         assert generated.shape == (2, 1, 28, 28)
+
+    def test_loss(self, input):
+        losses = self.gan.loss(input)
+        generator_loss = losses.generator_loss.item()
+        discriminator_loss = losses.discriminator_loss.item()
+        assert isinstance(losses, GanLosses)
+        assert isinstance(generator_loss, float)
+        assert isinstance(discriminator_loss, float)

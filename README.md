@@ -24,11 +24,6 @@ The list as been created from prompting OpenAI ChatGpt regarding the most famous
 convolutional neural networks (CNNs) and played a crucial role in the development
 of image recognition techniques.
 
-- Generative Adversarial Network (GAN): GANs, introduced by Ian Goodfellow and his colleagues
-in 2014, have become one of the most influential and popular models for image generation.
-GANs consist of a generator network and a discriminator network that are trained adversarially,
-leading to the generation of realistic images.
-
 ### Transformers
 
 - ViT (Vision Transformer) (2020): The original Vision Transformer introduced by Alexey Dosovitskiy
@@ -40,6 +35,13 @@ tasks, challenging the dominance of convolutional neural networks.
 - Variational Autoencoder (VAE): VAEs, introduced for image generation by Kingma and Welling in 2013,
 are probabilistic generative models. VAEs learn a probabilistic mapping from the input space to a
 latent space, enabling the generation of new samples by sampling from the latent space.
+
+### Adversarial
+
+- Generative Adversarial Network (GAN): GANs, introduced by Ian Goodfellow and his colleagues
+in 2014, have become one of the most influential and popular models for image generation.
+GANs consist of a generator network and a discriminator network that are trained adversarially,
+leading to the generation of realistic images.
 
 ## How to run the code
 

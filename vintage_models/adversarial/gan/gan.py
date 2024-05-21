@@ -1,8 +1,9 @@
 from collections import OrderedDict
+from dataclasses import dataclass
 from functools import partial
 
-from torch import Tensor, device as torch_device, randn, reshape
-from torch.nn import Module, Sequential, ReLU, Sigmoid, Dropout
+from torch import Tensor, device as torch_device, randn, reshape, ones_like, zeros_like
+from torch.nn import Module, Sequential, ReLU, Sigmoid, Dropout, BCELoss
 
 from vintage_models.components.multilayer_perceptron import LinearWithActivation, MaxOut
 
@@ -24,14 +25,6 @@ class GanGenerator(Module):
         hidden_size: int,
         latent_size: int,
     ) -> None:
-        """Initializes the GAN generator.
-
-        Args:
-            out_width: Width of the ouput image.
-            out_height: Height of the ouput image.
-            hidden_size: Size of the hidden layer (after application of the linear and activation layer).
-            latent_size: Size of the latent layer.
-        """
         super().__init__()
         self.out_width = out_width
         self.out_height = out_height
@@ -74,7 +67,7 @@ class GanDiscriminator(Module):
         in_width: Width of the input image.
         in_height: Height of the input image.
         hidden_size: Size of the hidden layer.
-        latent_size: Size of the latent layer.
+        maxout_depth: The depth of the maxout layers.
     """
 
     def __init__(
@@ -84,14 +77,6 @@ class GanDiscriminator(Module):
         hidden_size: int,
         maxout_depth: int,
     ) -> None:
-        """Initializes the GAN discriminator.
-
-        Args:
-            in_width: Width of the input image.
-            in_height: Height of the input image.
-            hidden_size: Size of the hidden layer (after application of the linear and activation layer).
-            latent_size: Size of the latent layer.
-        """
         super().__init__()
 
         self.in_width = in_width
@@ -119,8 +104,24 @@ class GanDiscriminator(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.to_vector(x)
-
         return self.model(x)
+
+
+@dataclass
+class GanLosses:
+    """Losses for the generative adversarial network.
+
+    Attributes:
+        generator_loss: Loss for the generator.
+        discriminator_loss: Loss for the discriminator.
+    """
+
+    generator_loss: Tensor
+    discriminator_loss: Tensor
+
+    @property
+    def total_loss(self) -> Tensor:
+        return self.generator_loss + self.discriminator_loss
 
 
 class Gan(Module):
@@ -149,8 +150,10 @@ class Gan(Module):
         Args:
             image_width: Width of the input and ouput images.
             image_height: Height of the input and ouput images.
-            hidden_size: Size of the hidden layer (after application of the linear and activation layer).
-            latent_size: Size of the latent layer.
+            hidden_size: Size of the hidden layer for both the generator and discriminator.
+            latent_size: Size of the latent layer of the generator. The size of noise used to generate
+            a new image.
+            maxout_depth: the depth of the maxout layers in the discriminator.
             device: Device to use for the model running.
         """
         super().__init__()
@@ -170,17 +173,38 @@ class Gan(Module):
             maxout_depth=maxout_depth,
         ).to(self.device)
 
+        self.bce_loss = BCELoss()
+
     def forward(self, x: Tensor) -> Tensor:
         return self.discriminator(x)
 
     def generate(self, n: int) -> Tensor:
         return self.generator(randn(n, self.generator.latent_size, device=self.device))
 
-    def loss(self, x: Tensor) -> Tensor:
-        pass
+    def loss(self, x: Tensor) -> GanLosses:
+        generated = self.generate(x.size(0))
+        generated_discriminated = self.discriminator(generated)
+        generator_loss = self.bce_loss(
+            generated_discriminated, ones_like(generated_discriminated)
+        )
+
+        real_discriminated = self.discriminator(x)
+        discriminator_loss_real = self.bce_loss(
+            real_discriminated, ones_like(real_discriminated)
+        )
+        discriminator_loss_generated = self.bce_loss(
+            generated_discriminated, zeros_like(generated_discriminated)
+        )
+
+        return GanLosses(
+            generator_loss=generator_loss,
+            discriminator_loss=(discriminator_loss_real + discriminator_loss_generated)
+            / 2,
+        )
 
     def __str__(self) -> str:
         return (
             f"GAN_image_width_{self.generator.out_width}_image_height_{self.generator.out_height}"
             f"_hidden_size_{self.generator.hidden_size}_latent_size_{self.generator.latent_size}"
+            f"_maxout_depth_{self.discriminator.maxout_depth}"
         )
