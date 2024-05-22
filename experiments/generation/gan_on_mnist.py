@@ -14,9 +14,9 @@ EPOCH_COUNT = 100
 MODEL = Gan(
     image_width=28,
     image_height=28,
-    hidden_size=500,
-    latent_size=200,
-    maxout_depth=3,
+    hidden_size=512,
+    latent_size=784,
+    maxout_depth=5,
     device=DEVICE,
 )
 

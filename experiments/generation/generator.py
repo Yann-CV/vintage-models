@@ -87,7 +87,7 @@ class ImageAdversarialGenerator(LightningModule):
         super().__init__()
         self.model = model
 
-        self.optimizer = SGD(self.model.parameters(), lr=1e-1)
+        self.optimizer = SGD(self.model.parameters(), lr=1e-3)
         self.training_step_outputs: list[Tensor] = []
         self.validation_step_outputs: list[Tensor] = []
         self.test_step_outputs: list[Tensor] = []

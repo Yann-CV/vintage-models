@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from torch.nn import Module, Linear, GELU, Sequential
-from torch import Tensor, stack
+from torch import Tensor, stack, device as torch_device
 
 
 class TwoLayerMLP(Module):
@@ -52,10 +52,16 @@ class MaxOut(Module):
     See the `Maxout networks` paper for more details.
     """
 
-    def __init__(self, in_features: int, out_features: int, maxout_depth: int) -> None:
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        maxout_depth: int,
+        device: str | torch_device | int = "cpu",
+    ) -> None:
         super().__init__()
         self.linears = [
-            Linear(in_features=in_features, out_features=out_features)
+            Linear(in_features=in_features, out_features=out_features, device=device)
             for _ in range(maxout_depth)
         ]
 

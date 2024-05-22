@@ -76,6 +76,7 @@ class GanDiscriminator(Module):
         in_height: int,
         hidden_size: int,
         maxout_depth: int,
+        device: str | torch_device | int = "cpu",
     ) -> None:
         super().__init__()
 
@@ -90,9 +91,15 @@ class GanDiscriminator(Module):
         self.model = Sequential(
             OrderedDict(
                 [
-                    ("maxout_hidden_1", MaxOut(in_size, hidden_size, maxout_depth)),
+                    (
+                        "maxout_hidden_1",
+                        MaxOut(in_size, hidden_size, maxout_depth, device),
+                    ),
                     ("dropout_1", Dropout(0.5)),
-                    ("maxout_hidden_2", MaxOut(hidden_size, hidden_size, maxout_depth)),
+                    (
+                        "maxout_hidden_2",
+                        MaxOut(hidden_size, hidden_size, maxout_depth, device),
+                    ),
                     ("dropout_2", Dropout(0.5)),
                     (
                         "linear_with_sigmoid",
@@ -171,6 +178,7 @@ class Gan(Module):
             in_height=image_height,
             hidden_size=hidden_size,
             maxout_depth=maxout_depth,
+            device=device,
         ).to(self.device)
 
         self.bce_loss = BCELoss()
