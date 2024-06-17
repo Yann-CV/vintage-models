@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
-from torch.nn import Module, Linear, GELU, Sequential
+import torch
+from torch.nn import Module, Linear, GELU, Sequential, ParameterList
 from torch import Tensor, stack, device as torch_device
 
 
@@ -60,14 +61,19 @@ class MaxOut(Module):
         device: str | torch_device | int = "cpu",
     ) -> None:
         super().__init__()
-        self.linears = [
-            Linear(in_features=in_features, out_features=out_features, device=device)
-            for _ in range(maxout_depth)
-        ]
+
+        self.linears = []
+        self.params = ParameterList()
+        for _ in range(maxout_depth):
+            linear = Linear(
+                in_features=in_features, out_features=out_features, device=device
+            )
+            self.linears.append(linear)
+            self.params.extend(list(linear.parameters()))
 
     def forward(self, x: Tensor) -> Tensor:
         linear_outputs = stack([linear(x) for linear in self.linears], dim=2)
-        return linear_outputs.max(dim=2).values
+        return torch.max(linear_outputs, dim=2)[0]
 
 
 class TwoLayerGeluMLP(Module):

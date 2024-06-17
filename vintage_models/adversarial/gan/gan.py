@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from functools import partial
 
 from torch import Tensor, device as torch_device, randn, reshape, ones_like, zeros_like
-from torch.nn import Module, Sequential, ReLU, Sigmoid, Dropout, BCELoss
+from torch.nn import Module, Sequential, ReLU, Sigmoid, BCELoss, BatchNorm1d
 
 from vintage_models.components.multilayer_perceptron import LinearWithActivation, MaxOut
 
@@ -22,30 +22,38 @@ class GanGenerator(Module):
         self,
         out_width: int,
         out_height: int,
-        hidden_size: int,
         latent_size: int,
+        input_size: int,
     ) -> None:
         super().__init__()
         self.out_width = out_width
         self.out_height = out_height
-        self.hidden_size = hidden_size
         self.latent_size = latent_size
+        self.input_size = input_size
 
         self.model = Sequential(
             OrderedDict(
                 [
                     (
                         "linear_with_relu_1",
-                        LinearWithActivation(latent_size, hidden_size, ReLU()),
+                        LinearWithActivation(
+                            in_size=input_size,
+                            out_size=latent_size,
+                            activation_layer=ReLU(),
+                        ),
                     ),
                     (
                         "linear_with_relu_2",
-                        LinearWithActivation(hidden_size, hidden_size, ReLU()),
+                        LinearWithActivation(
+                            in_size=latent_size,
+                            out_size=latent_size,
+                            activation_layer=ReLU(),
+                        ),
                     ),
                     (
                         "linear_with_sigmoid",
                         LinearWithActivation(
-                            hidden_size, self.out_width * self.out_height, Sigmoid()
+                            latent_size, self.out_width * self.out_height, Sigmoid()
                         ),
                     ),
                 ]
@@ -95,12 +103,12 @@ class GanDiscriminator(Module):
                         "maxout_hidden_1",
                         MaxOut(in_size, hidden_size, maxout_depth, device),
                     ),
-                    ("dropout_1", Dropout(0.5)),
+                    ("batch_norm_1", BatchNorm1d(hidden_size, 0.8)),
                     (
                         "maxout_hidden_2",
                         MaxOut(hidden_size, hidden_size, maxout_depth, device),
                     ),
-                    ("dropout_2", Dropout(0.5)),
+                    ("batch_norm_2", BatchNorm1d(hidden_size, 0.8)),
                     (
                         "linear_with_sigmoid",
                         LinearWithActivation(hidden_size, 1, Sigmoid()),
@@ -147,9 +155,10 @@ class Gan(Module):
         self,
         image_width: int,
         image_height: int,
-        hidden_size: int,
-        latent_size: int,
-        maxout_depth: int,
+        generator_input_size: int,
+        generator_latent_size: int,
+        discriminator_hidden_size: int,
+        discriminator_maxout_depth: int,
         device: str | torch_device | int = "cpu",
     ) -> None:
         """Initializes the Vae.
@@ -169,15 +178,15 @@ class Gan(Module):
         self.generator = GanGenerator(
             out_width=image_width,
             out_height=image_height,
-            hidden_size=hidden_size,
-            latent_size=latent_size,
+            input_size=generator_input_size,
+            latent_size=generator_latent_size,
         ).to(self.device)
 
         self.discriminator = GanDiscriminator(
             in_width=image_width,
             in_height=image_height,
-            hidden_size=hidden_size,
-            maxout_depth=maxout_depth,
+            hidden_size=discriminator_hidden_size,
+            maxout_depth=discriminator_maxout_depth,
             device=device,
         ).to(self.device)
 
@@ -187,32 +196,34 @@ class Gan(Module):
         return self.discriminator(x)
 
     def generate(self, n: int) -> Tensor:
-        return self.generator(randn(n, self.generator.latent_size, device=self.device))
+        size = (n, self.generator.input_size)
+        return self.generator(randn(size=size, device=self.device))
 
-    def loss(self, x: Tensor) -> GanLosses:
-        generated = self.generate(x.size(0))
-        generated_discriminated = self.discriminator(generated)
-        generator_loss = self.bce_loss(
-            generated_discriminated, ones_like(generated_discriminated)
-        )
+    def generator_loss(self, x: Tensor) -> Tensor:
+        """compute the loss from generated data.
 
+        x has been created by calling the generate method.
+        """
+        discriminated = self.discriminator(x)
+        label = ones_like(discriminated, requires_grad=False)
+        return self.bce_loss(discriminated, label)
+
+    def discriminator_loss(self, x: Tensor, fake: Tensor) -> Tensor:
         real_discriminated = self.discriminator(x)
-        discriminator_loss_real = self.bce_loss(
-            real_discriminated, ones_like(real_discriminated)
-        )
-        discriminator_loss_generated = self.bce_loss(
-            generated_discriminated, zeros_like(generated_discriminated)
-        )
+        real_label = ones_like(real_discriminated, requires_grad=False)
+        real_loss = self.bce_loss(real_discriminated, real_label)
 
-        return GanLosses(
-            generator_loss=generator_loss,
-            discriminator_loss=(discriminator_loss_real + discriminator_loss_generated)
-            / 2,
-        )
+        fake_discriminated = self.discriminator(fake.detach())
+        fake_label = zeros_like(fake_discriminated, requires_grad=False)
+        fake_loss = self.bce_loss(fake_discriminated, fake_label)
+
+        return (real_loss + fake_loss) / 2
 
     def __str__(self) -> str:
         return (
             f"GAN_image_width_{self.generator.out_width}_image_height_{self.generator.out_height}"
-            f"_hidden_size_{self.generator.hidden_size}_latent_size_{self.generator.latent_size}"
-            f"_maxout_depth_{self.discriminator.maxout_depth}"
+            f"_generator_input_size_{self.generator.input_size}_"
+            f"generator_latent_size_{self.generator.latent_size}_"
+            f"discriminator_hidden_size_{self.discriminator.hidden_size}_"
+            f"discriminator_maxout_depth_{self.discriminator.maxout_depth}"
         )
