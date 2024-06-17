@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import torch
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import MLFlowLogger
@@ -7,6 +8,7 @@ from experiments.classification.classifier import ImageClassifier
 from experiments.data.mnist import MNISTDataModule
 from vintage_models.cnn.lenet.lenet import LeNet5
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 EPOCH_COUNT = 100
 MODEL = LeNet5(
@@ -37,7 +39,7 @@ DATAMODULE = MNISTDataModule(Path("/storage/ml"), train_batch_size=500)
 DATAMODULE.prepare_data()
 DATAMODULE.setup("fit")
 TRAINER = Trainer(
-    accelerator="cuda",
+    accelerator=DEVICE,
     callbacks=[CHECKPOINT_CALLBACK],
     logger=LOGGER,
     max_epochs=EPOCH_COUNT,

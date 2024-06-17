@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import torch
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import MLFlowLogger
@@ -7,8 +8,9 @@ from experiments.classification.classifier import ImageClassifier
 from experiments.data.mnist import MNISTDataModule
 from vintage_models.vision_transformers.vit.vit import ViT
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-EPOCH_COUNT = 100
+EPOCH_COUNT = 1
 MODEL = ViT(
     patch_size=8,
     image_width=28,
@@ -42,7 +44,7 @@ DATAMODULE = MNISTDataModule(Path("/storage/ml"), train_batch_size=2000)
 DATAMODULE.prepare_data()
 DATAMODULE.setup("fit")
 TRAINER = Trainer(
-    accelerator="cuda",
+    accelerator=DEVICE,
     callbacks=[CHECKPOINT_CALLBACK],
     logger=LOGGER,
     max_epochs=EPOCH_COUNT,
