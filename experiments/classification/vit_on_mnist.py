@@ -10,7 +10,8 @@ from vintage_models.vision_transformers.vit.vit import ViT
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-EPOCH_COUNT = 1
+EPOCH_COUNT = 100
+
 MODEL = ViT(
     patch_size=8,
     image_width=28,

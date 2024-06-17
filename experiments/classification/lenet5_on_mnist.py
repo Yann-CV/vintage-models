@@ -11,6 +11,7 @@ from vintage_models.cnn.lenet.lenet import LeNet5
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 EPOCH_COUNT = 100
+
 MODEL = LeNet5(
     image_width=28,
     image_height=28,

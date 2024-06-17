@@ -11,6 +11,7 @@ from vintage_models.autoencoder.vae.vae import Vae
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 EPOCH_COUNT = 30
+
 MODEL = Vae(
     image_width=28,
     image_height=28,
