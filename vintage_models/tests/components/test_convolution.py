@@ -23,6 +23,7 @@ class TestFilteredConv2d:
         output = self.filtered_conv(input)
         assert output.shape == (1, 2, 1, 1)
 
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
     def test_gpu_usage(self, input):
         self.filtered_conv.to("cuda")
         self.filtered_conv(input.to("cuda"))
