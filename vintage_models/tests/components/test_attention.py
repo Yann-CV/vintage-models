@@ -8,6 +8,9 @@ from vintage_models.components.attention import (
 )
 
 
+GPU_NOT_AVAILABLE = not torch.cuda.is_available()
+
+
 @pytest.fixture
 def queries():
     return torch.tensor([[0, 0.5, 0], [0, 0, 0]], dtype=torch.float32)
@@ -53,6 +56,11 @@ class TestScaledDotProductAttention:
         with pytest.raises(ValueError):
             self.attention(keys, torch.zeros(1, 4), queries)
 
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, keys, values, queries):
+        self.attention.to("cuda")
+        self.attention(keys.to("cuda"), values.to("cuda"), queries.to("cuda"))
+
 
 class TestHeadAttention:
     head_attention = HeadAttention(dk=3, dv=4)
@@ -73,6 +81,11 @@ class TestHeadAttention:
         with pytest.raises(RuntimeError):
             self.head_attention(keys, torch.zeros(2, 3), queries)
 
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, keys, values, queries):
+        self.head_attention.to("cuda")
+        self.head_attention(keys.to("cuda"), values.to("cuda"), queries.to("cuda"))
+
 
 class TestMultiHeadAttention:
     multi_head_attention = MultiHeadAttention(dk=3, dv=4, h=2)
@@ -80,3 +93,10 @@ class TestMultiHeadAttention:
     def test_simple(self, keys, values, queries):
         output = self.multi_head_attention(keys, values, queries)
         assert output.shape == (2, 4)
+
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, keys, values, queries):
+        self.multi_head_attention.to("cuda")
+        self.multi_head_attention(
+            keys.to("cuda"), values.to("cuda"), queries.to("cuda")
+        )
