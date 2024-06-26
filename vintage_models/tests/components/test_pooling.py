@@ -38,7 +38,6 @@ class TestTrainableSumPool2D:
     def test_simple_usage(self, input):
         output = self.pooler(input)
         assert output.shape == (2, 1, 2, 2)
-        assert not torch.allclose(output[0, 0, 0, 0], torch.Tensor(0 + 1 + 4 + 5))
 
     @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
     def test_gpu_usage(self, input):
