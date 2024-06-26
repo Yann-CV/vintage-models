@@ -55,7 +55,7 @@ class LeNet5(Module):
             out_channels=6,
             kernel_size=5,
         )
-        add_pool_1 = TrainableSumPool2D(
+        sum_pool_1 = TrainableSumPool2D(
             kernel_size=2,
             in_channels=6,
             activation=Sigmoid(),
@@ -82,7 +82,7 @@ class LeNet5(Module):
             out_channels=1,
             kernel_size=5,
         )
-        add_pool_2 = TrainableSumPool2D(
+        sum_pool_2 = TrainableSumPool2D(
             kernel_size=2,
             in_channels=16,
             activation=Sigmoid(),
@@ -94,9 +94,9 @@ class LeNet5(Module):
         )
         self.model_from_image = Sequential(
             conv_1,
-            add_pool_1,
+            sum_pool_1,
             conv_2,
-            add_pool_2,
+            sum_pool_2,
             conv_3,
         )
         self.model_from_feature = Sequential(
