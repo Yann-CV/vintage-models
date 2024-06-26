@@ -23,7 +23,11 @@ class PositionalEncoding1D(Module):
                 f"The length {embedding_len} of an embedding must be even."
             )
         self.embedding_len = embedding_len
-        self.positional_embeddings = self._compute_positional_embeddings()
+        self.register_buffer(
+            "positional_embeddings",
+            self._compute_positional_embeddings(),
+            persistent=True,
+        )
 
     def _compute_positional_embeddings(self):
         sin_cos_len = self.embedding_len // 2

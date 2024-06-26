@@ -4,6 +4,9 @@ import torch
 from vintage_models.autoencoder.vae.vae import VaeEncoder, VaeDecoder, Vae
 
 
+GPU_NOT_AVAILABLE = not torch.cuda.is_available()
+
+
 @pytest.fixture
 def input():
     return torch.randint(0, 256, (2, 1, 28, 28)).float() / 255
@@ -29,6 +32,11 @@ class TestVaeEncoder:
         with pytest.raises(ValueError):
             self.encoder(torch.zeros(4, 3, 28, 28))
 
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, input):
+        self.encoder.to("cuda")
+        self.encoder(input.to("cuda"))
+
 
 class TestVaeDecoder:
     decoder = VaeDecoder(28, 28, 100, 2)
@@ -45,6 +53,11 @@ class TestVaeDecoder:
     def test_wrong_channel_count(self, input):
         with pytest.raises(RuntimeError):
             self.decoder(torch.zeros(4, 3, 28, 28))
+
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, latent):
+        self.decoder.to("cuda")
+        self.decoder(latent.to("cuda"))
 
 
 class TestVae:
@@ -67,3 +80,8 @@ class TestVae:
     def test_wrong_input_size(self, input):
         with pytest.raises(RuntimeError):
             self.vae(torch.zeros(4, 1, 28, 28 - 1))
+
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, input):
+        self.vae.to("cuda")
+        self.vae(input.to("cuda"))
