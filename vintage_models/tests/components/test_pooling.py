@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from vintage_models.components.pooling import SumPool2D, SumAddPool2D
+from vintage_models.components.pooling import SumPool2D, TrainableSumPool2D
 
 
 GPU_NOT_AVAILABLE = not torch.cuda.is_available()
@@ -30,8 +30,8 @@ class TestAddPool2D:
         self.pooler(input.to("cuda"))
 
 
-class TestTrainableAddPool2D:
-    pooler = SumAddPool2D(
+class TestTrainableSumPool2D:
+    pooler = TrainableSumPool2D(
         kernel_size=2, in_channels=1, activation=torch.nn.Sigmoid()
     )
 

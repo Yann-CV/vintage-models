@@ -28,7 +28,7 @@ class SumPool2D(AvgPool2d):
         )
 
 
-class SumAddPool2D(Module):
+class TrainableSumPool2D(Module):
     """Sum pooling with trainable scale, bias and activation.
 
     Attributes:

@@ -4,7 +4,7 @@ from torch import Tensor
 from vintage_models.components.activation import ScaledTanh
 from vintage_models.components.convolution import FilteredConv2d
 from vintage_models.components.image import ImageTargeter
-from vintage_models.components.pooling import SumAddPool2D
+from vintage_models.components.pooling import TrainableSumPool2D
 from vintage_models.components.rbf import EuclideanDistanceRBF
 from vintage_models.utility.transform import PaddingMode
 
@@ -55,7 +55,7 @@ class LeNet5(Module):
             out_channels=6,
             kernel_size=5,
         )
-        add_pool_1 = SumAddPool2D(
+        add_pool_1 = TrainableSumPool2D(
             kernel_size=2,
             in_channels=6,
             activation=Sigmoid(),
@@ -82,7 +82,7 @@ class LeNet5(Module):
             out_channels=1,
             kernel_size=5,
         )
-        add_pool_2 = SumAddPool2D(
+        add_pool_2 = TrainableSumPool2D(
             kernel_size=2,
             in_channels=16,
             activation=Sigmoid(),
