@@ -31,49 +31,42 @@ class ImageClassifier(LightningModule):
             }
         )
         self.optimizer = SGD(self.model.parameters(), lr=0.5)
-        self.training_step_outputs: list[Tensor] = []
-        self.validation_step_outputs: list[tuple[Tensor, Tensor]] = []
-        self.test_step_outputs: list[tuple[Tensor, Tensor]] = []
 
     def training_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, target = batch
         preds = self.model(data)
         loss = nll_loss(preds, target)
-        self.training_step_outputs.append(loss)
-        return loss
 
-    def on_train_epoch_end(self) -> None:
         self.log(
             "training_loss",
-            self.training_step_outputs[-1].item(),
+            loss,
             prog_bar=True,
             logger=True,
         )
-        self.training_step_outputs.clear()
+
+        return loss
 
     def validation_step(self, batch: tuple[Tensor, Tensor]) -> Mapping[str, Tensor]:
         data, target = batch
         preds = self.model(data)
-        self.validation_step_outputs.append((preds, target))
+        self.metrics.update(preds=preds, target=target)
         return {"preds": preds, "target": target}
 
     def on_validation_epoch_end(self) -> None:
-        for preds, target in self.validation_step_outputs:
-            self.metrics.update(preds=preds, target=target)
         metric_results = self.metrics.compute()
+        test_results = {
+            name + "_val": result for name, result in metric_results.items()
+        }
         self.metrics.reset()
-        self.log_dict(metric_results, prog_bar=True, logger=True)
+        self.log_dict(test_results, prog_bar=True, logger=True)
 
     def test_step(self, batch: tuple[Tensor, Tensor]) -> Mapping[str, Tensor]:
         data, target = batch
         preds = self.model(data)
-        self.test_step_outputs.append((preds, target))
-
+        self.metrics.update(preds=preds, target=target)
         return {"preds": preds, "target": target}
 
     def on_test_epoch_end(self) -> None:
-        for preds, target in self.test_step_outputs:
-            self.metrics.update(preds=preds, target=target)
         metric_results = self.metrics.compute()
         test_results = {
             name + "_test": result for name, result in metric_results.items()
