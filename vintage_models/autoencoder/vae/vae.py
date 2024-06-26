@@ -139,6 +139,7 @@ class Vae(Module):
     Attributes:
         encoder: Encoder for the variational autoencoder. Tranforms the image toward the latent space.
         decoder: Decoder for the variational autoencoder. Tranforms the latent space toward the image space.
+        device: Device to use for the model running.
     """
 
     def __init__(
@@ -156,6 +157,7 @@ class Vae(Module):
             image_height: Height of the input and ouput images.
             hidden_size: Size of the hidden layer (after application of the linear and activation layer).
             latent_size: Size of the latent layer.
+            device: Device to use for the model running.
         """
         super().__init__()
         self.device = torch_device(device)

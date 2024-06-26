@@ -7,6 +7,7 @@ from vintage_models.components.multilayer_perceptron import (
     TwoLayerGeluMLP,
     TwoLayerMLP,
     LinearWithActivation,
+    MaxOut,
 )
 
 
@@ -49,3 +50,15 @@ class TestLinearWithActivation:
     def test_wrong_input_size(self, input):
         with pytest.raises(RuntimeError):
             self.linear_with_activation(torch.zeros(1, 2))
+
+
+class TestMaxOut:
+    linear_with_max_out = MaxOut(3, 2, 4)
+
+    def test_simple(self, input):
+        output = self.linear_with_max_out(input)
+        assert output.shape == (2, 2)
+
+    def test_wrong_input_size(self, input):
+        with pytest.raises(RuntimeError):
+            self.linear_with_max_out(torch.zeros(1, 2))
