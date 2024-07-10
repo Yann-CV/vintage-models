@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 import torch
-from torch.nn import Module, Linear, GELU, Sequential, ParameterList
+from torch.nn import Module, Linear, GELU, Sequential, ModuleList
 from torch import Tensor, stack, device as torch_device
 
 
@@ -62,14 +62,14 @@ class MaxOut(Module):
     ) -> None:
         super().__init__()
 
-        self.linears = []
-        self.params = ParameterList()
-        for _ in range(maxout_depth):
-            linear = Linear(
-                in_features=in_features, out_features=out_features, device=device
-            )
-            self.linears.append(linear)
-            self.params.extend(list(linear.parameters()))
+        self.linears = ModuleList(
+            [
+                Linear(
+                    in_features=in_features, out_features=out_features, device=device
+                )
+                for _ in range(maxout_depth)
+            ]
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         linear_outputs = stack([linear(x) for linear in self.linears], dim=2)

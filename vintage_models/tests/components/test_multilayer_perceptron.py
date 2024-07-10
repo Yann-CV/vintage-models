@@ -80,3 +80,8 @@ class TestMaxOut:
     def test_wrong_input_size(self, input):
         with pytest.raises(RuntimeError):
             self.linear_with_max_out(torch.zeros(1, 2))
+
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, input):
+        self.linear_with_max_out.to("cuda")
+        self.linear_with_max_out(input.to("cuda"))
