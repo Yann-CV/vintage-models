@@ -1,7 +1,10 @@
 import pytest
 import torch
 
-from vintage_models.components.pooling import AddPool2D, TrainableAddPool2D
+from vintage_models.components.pooling import SumPool2D, TrainableSumPool2D
+
+
+GPU_NOT_AVAILABLE = not torch.cuda.is_available()
 
 
 @pytest.fixture()
@@ -12,20 +15,31 @@ def input():
 
 
 class TestAddPool2D:
+    pooler = SumPool2D(
+        kernel_size=2,
+    )
+
     def test_simple_usage(self, input):
-        pooler = AddPool2D(
-            kernel_size=2,
-        )
-        output = pooler(input)
+        output = self.pooler(input)
         assert output.shape == (2, 1, 2, 2)
         assert output[0, 0, 0, 0] == 0 + 1 + 4 + 5
 
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, input):
+        self.pooler.to("cuda")
+        self.pooler(input.to("cuda"))
 
-class TestTrainableAddPool2D:
+
+class TestTrainableSumPool2D:
+    pooler = TrainableSumPool2D(
+        kernel_size=2, in_channels=1, activation=torch.nn.Sigmoid()
+    )
+
     def test_simple_usage(self, input):
-        pooler = TrainableAddPool2D(
-            kernel_size=2, in_channels=1, activation=torch.nn.Sigmoid()
-        )
-        output = pooler(input)
+        output = self.pooler(input)
         assert output.shape == (2, 1, 2, 2)
-        assert not torch.allclose(output[0, 0, 0, 0], torch.Tensor(0 + 1 + 4 + 5))
+
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, input):
+        self.pooler.to("cuda")
+        self.pooler(input.to("cuda"))

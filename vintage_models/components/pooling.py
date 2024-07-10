@@ -3,8 +3,8 @@ from torch.nn import Module, Parameter, ParameterList, AvgPool2d
 from torch.nn.common_types import _size_2_t
 
 
-class AddPool2D(AvgPool2d):
-    """Add the values in the pooling kernel together.
+class SumPool2D(AvgPool2d):
+    """Sum the values in the pooling kernel together.
 
     Attributes: See torch.nn.AvgPool2d. Here, the divisor_override is always 1
     (obtain the sum and not the average).
@@ -28,8 +28,8 @@ class AddPool2D(AvgPool2d):
         )
 
 
-class TrainableAddPool2D(Module):
-    """Add pooling with trainable scale, bias and activation.
+class TrainableSumPool2D(Module):
+    """Sum pooling with trainable scale, bias and activation.
 
     Attributes:
         in_channels: Number of input channels for each element of the batch.
@@ -56,7 +56,7 @@ class TrainableAddPool2D(Module):
         self.scale: ParameterList = ParameterList(
             [Parameter(randn(1)) for _ in range(in_channels)]
         )
-        self.add_pool_2d = AddPool2D(
+        self.add_pool_2d = SumPool2D(
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,

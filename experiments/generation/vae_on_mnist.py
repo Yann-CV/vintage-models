@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import torch
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import MLFlowLogger
@@ -8,13 +8,16 @@ from experiments.generation.generator import ImageAutoEncoderGenerator
 from vintage_models.autoencoder.vae.vae import Vae
 
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 EPOCH_COUNT = 30
+
 MODEL = Vae(
     image_width=28,
     image_height=28,
     hidden_size=500,
     latent_size=200,
-    device="cuda",
+    device=DEVICE,
 )
 
 GENERATOR = ImageAutoEncoderGenerator(MODEL)
@@ -45,7 +48,7 @@ DATAMODULE = MNISTDataModule(
 DATAMODULE.prepare_data()
 DATAMODULE.setup("fit")
 TRAINER = Trainer(
-    accelerator="cuda",
+    accelerator=DEVICE,
     callbacks=[CHECKPOINT_CALLBACK],
     logger=LOGGER,
     max_epochs=EPOCH_COUNT,
