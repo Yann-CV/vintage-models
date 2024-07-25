@@ -70,7 +70,7 @@ class GanGenerator(Module):
 
 
 class GanDiscriminator(Module):
-    """Discriminator for the vintage variational autoencoder.
+    """Discriminator for the generative adversarial network.
 
     Attributes:
         in_width: Width of the input image.

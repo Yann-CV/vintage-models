@@ -72,7 +72,7 @@ class ImageAutoEncoderGenerator(LightningModule):
 class ImageAdversarialGenerator(LightningModule):
     """Lightning module for image generation experiments."""
 
-    def __init__(self, model: Gan, device: torch_device | str | int) -> None:
+    def __init__(self, model: Gan, device: torch_device | str | None) -> None:
         super().__init__()
         self.model = model
 
