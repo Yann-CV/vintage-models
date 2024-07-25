@@ -6,6 +6,7 @@ from pytorch_lightning.loggers import MLFlowLogger
 from experiments.data.mnist import MNISTDataModule
 from experiments.generation.generator import ImageAutoEncoderGenerator
 from vintage_models.autoencoder.vae.vae import Vae
+from torchvision.transforms.v2 import Compose, ToImage, ToDtype
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -40,9 +41,13 @@ CHECKPOINT_CALLBACK = ModelCheckpoint(
 DATAMODULE = MNISTDataModule(
     Path("/storage/ml"),
     train_batch_size=500,
-    color=False,
-    between_0_and_1=True,
     num_workers=11,
+    transform=Compose(
+        [
+            ToImage(),
+            ToDtype(torch.float32, scale=True),
+        ]
+    ),
 )
 
 DATAMODULE.prepare_data()

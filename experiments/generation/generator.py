@@ -1,11 +1,14 @@
 from pathlib import Path
 
+import numpy as np
 import torch
 from lightning import LightningModule
+
 from pytorch_lightning.loggers import MLFlowLogger
-from torch import Tensor
-from torch.nn import Linear
-from torch.optim import Adam
+from torch import Tensor, ones_like, randn, zeros_like, device as torch_device
+from torch.nn import Linear, BCELoss
+from torch.optim import Adam, SGD
+from torchvision.utils import make_grid
 
 from vintage_models.adversarial.gan.gan import Gan, GanLosses
 from vintage_models.autoencoder.vae.vae import Vae
@@ -46,7 +49,7 @@ class ImageAutoEncoderGenerator(LightningModule):
 
     def test_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, _ = batch
-        generated = self.model.generate(1)
+        generated = self.generate_data(1)
 
         assert isinstance(self.logger, MLFlowLogger)
         saving_path = Path("/storage/ml") / str(self.logger.experiment_id) / "generated"
@@ -69,68 +72,78 @@ class ImageAutoEncoderGenerator(LightningModule):
 class ImageAdversarialGenerator(LightningModule):
     """Lightning module for image generation experiments."""
 
-    def __init__(
-        self,
-        model: Gan,
-    ) -> None:
+    def __init__(self, model: Gan, device: torch_device) -> None:
         super().__init__()
         self.model = model
 
-        self.training_step_outputs: list[Tensor] = []
-        self.validation_step_outputs: list[Tensor] = []
-        self.test_step_outputs: list[Tensor] = []
-        b1 = 0.5
-        b2 = 0.999
-        lr = 0.0002
-        self.discriminator_optimiser = Adam(
-            self.model.discriminator.parameters(), lr=lr, betas=(b1, b2)
+        self.discriminator_optimiser = SGD(
+            self.model.discriminator.parameters(), lr=0.01
         )
-        self.generator_optimiser = Adam(
-            self.model.generator.parameters(), lr=lr, betas=(b1, b2)
+        self.generator_optimiser = SGD(self.model.generator.parameters(), lr=0.01)
+        self.bce_loss = BCELoss()
+
+        self.generation_counter = 0
+        self.epoch_counter = 0
+        self.last_train_loss: GanLosses
+
+        self.grid_side = 5
+        self.train_epoch_end_noise = randn(
+            size=(self.grid_side**2, self.model.generator.input_size), device=device
         )
 
     def configure_optimizers(self):
         # with multiple optimizers, we should set self.automatic_optimization = False
         # However this is somehow deactivating the model checkpointing
-        dummy_optimizer = Adam(Linear(1, 1).parameters())
+        dummy_optimizer = SGD(Linear(1, 1).parameters(), lr=0.1)
         return dummy_optimizer
+
+    def generate_data(self, batch_size: int) -> Tensor:
+        size = (batch_size, self.model.generator.input_size)
+        return self.model.generator(randn(size=size, device=self.device))
+
+    def generator_loss(self, X: Tensor) -> Tensor:
+        fake = self.generate_data(X.size(0))
+        discriminated = self.model.discriminator(fake)
+        return self.bce_loss(discriminated, ones_like(discriminated))
+
+    def discriminator_loss(self, X: Tensor) -> Tensor:
+        real_discriminated = self.model.discriminator(X)
+        real_label = ones_like(real_discriminated)
+        real_loss = self.bce_loss(real_discriminated, real_label)
+
+        fake = self.generate_data(X.size(0))
+        fake_discriminated = self.model.discriminator(fake.detach())
+        fake_label = zeros_like(fake_discriminated)
+        fake_loss = self.bce_loss(fake_discriminated, fake_label)
+
+        return real_loss + fake_loss
 
     def training_step(self, batch: tuple[Tensor, Tensor]) -> torch.Tensor:
         X, _ = batch
-        fake = self.model.generate(X.size(0))
-
-        self.generator_optimiser.zero_grad()
-        generator_loss = self.model.generator_loss(fake)
-        generator_loss.backward()
-        self.generator_optimiser.step()
 
         self.discriminator_optimiser.zero_grad()
-        discriminator_loss = self.model.discriminator_loss(X, fake)
+        discriminator_loss = self.discriminator_loss(X)
         discriminator_loss.backward()
         self.discriminator_optimiser.step()
 
-        self.training_step_outputs.append(
-            GanLosses(
-                generator_loss=generator_loss, discriminator_loss=discriminator_loss
-            )
+        self.generator_optimiser.zero_grad()
+        generator_loss = self.generator_loss(X)
+        generator_loss.backward()
+        self.generator_optimiser.step()
+
+        self.last_train_loss = GanLosses(
+            generator_loss=generator_loss, discriminator_loss=discriminator_loss
         )
 
         return torch.tensor(0.0, requires_grad=True)
 
     def on_train_epoch_end(self) -> None:
-        generator_loss = self.training_step_outputs[-1].generator_loss.item()
-        discriminator_loss = self.training_step_outputs[-1].discriminator_loss.item()
+        generator_loss = self.last_train_loss.generator_loss.item()
+        discriminator_loss = self.last_train_loss.discriminator_loss.item()
 
-        loss = generator_loss + discriminator_loss
         self.log(
             "training_generator_loss",
             generator_loss,
-            prog_bar=True,
-            logger=True,
-        )
-        self.log(
-            "training_loss",
-            loss,
             prog_bar=True,
             logger=True,
         )
@@ -140,67 +153,63 @@ class ImageAdversarialGenerator(LightningModule):
             prog_bar=True,
             logger=True,
         )
-
-        self.training_step_outputs.clear()
-
-    def validation_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
-        data, _ = batch
-
-        with torch.no_grad():
-            fake = self.model.generate(data.size(0))
-            generator_loss = self.model.generator_loss(fake)
-            discriminator_loss = self.model.discriminator_loss(data, fake)
-
-        self.validation_step_outputs.append(
-            GanLosses(
-                generator_loss=generator_loss, discriminator_loss=discriminator_loss
-            )
-        )
-        return generator_loss + discriminator_loss
-
-    def on_validation_epoch_end(self) -> None:
-        generator_loss = self.validation_step_outputs[-1].generator_loss.item()
-        discriminator_loss = self.validation_step_outputs[-1].discriminator_loss.item()
         self.log(
-            "val_loss",
+            "training_loss",
             generator_loss + discriminator_loss,
             prog_bar=True,
             logger=True,
         )
-        self.log(
-            "val_discriminator_loss",
-            discriminator_loss,
-            prog_bar=True,
-            logger=True,
+
+        with torch.no_grad():
+            generated = self.model.generator(self.train_epoch_end_noise)
+
+        grid = make_grid(
+            generated,
+            nrow=self.grid_side,
+            normalize=True,
         )
-        self.log(
-            "val_generator_loss",
-            generator_loss,
-            prog_bar=True,
-            logger=True,
+
+        grid = np.moveaxis(grid.cpu().numpy(), 0, 2)  # from (C, H, W) to (H, W, C)
+
+        assert isinstance(self.logger, MLFlowLogger)
+        saving_path = (
+            Path("/storage/ml") / str(self.logger.experiment_id) / "training_evolution"
         )
-        self.validation_step_outputs.clear()
+        if not saving_path.exists():
+            saving_path.mkdir(parents=True, exist_ok=True)
+
+        self.logger.experiment.log_image(
+            self.logger.run_id,
+            grid,
+            f"training_evolution/generated_{self.epoch_counter}.png",
+        )
+
+        self.epoch_counter += 1
 
     def test_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
-        self.model.eval()
         data, _ = batch
-        with torch.no_grad():
-            generated = self.model.generate(1)
-        self.test_step_outputs.append(generated)
-        return generated
 
-    def on_test_epoch_end(self) -> None:
+        with torch.no_grad():
+            generated = self.generate_data(self.grid_side**2)
+        grid = make_grid(
+            generated,
+            nrow=self.grid_side,
+            normalize=True,
+        )
+
+        grid = np.moveaxis(grid.cpu().numpy(), 0, 2)  # from (C, H, W) to (H, W, C)
+
         assert isinstance(self.logger, MLFlowLogger)
         saving_path = Path("/storage/ml") / str(self.logger.experiment_id) / "generated"
         if not saving_path.exists():
             saving_path.mkdir(parents=True, exist_ok=True)
 
-        for idx, image in enumerate(self.test_step_outputs):
-            # warning: only tested with mlflow logger
-            self.logger.experiment.log_image(
-                self.logger.run_id,
-                image.squeeze().cpu().numpy(),
-                f"generated_{idx}.png",
-            )
+        self.logger.experiment.log_image(
+            self.logger.run_id,
+            grid,
+            f"generated_{self.generation_counter}.png",
+        )
 
-        self.test_step_outputs.clear()
+        self.generation_counter += 1
+
+        return generated

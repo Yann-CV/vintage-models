@@ -1,9 +1,8 @@
 from collections import OrderedDict
 from dataclasses import dataclass
-from functools import partial
 
-from torch import Tensor, device as torch_device, randn, reshape, ones_like, zeros_like
-from torch.nn import Module, Sequential, ReLU, Sigmoid, BCELoss, BatchNorm1d
+from torch import Tensor
+from torch.nn import Module, Sequential, ReLU, Sigmoid, Dropout, Tanh
 
 from vintage_models.components.multilayer_perceptron import LinearWithActivation, MaxOut
 
@@ -40,6 +39,7 @@ class GanGenerator(Module):
                             in_size=input_size,
                             out_size=latent_size,
                             activation_layer=ReLU(),
+                            normalize=True,
                         ),
                     ),
                     (
@@ -48,24 +48,25 @@ class GanGenerator(Module):
                             in_size=latent_size,
                             out_size=latent_size,
                             activation_layer=ReLU(),
+                            normalize=True,
                         ),
                     ),
                     (
                         "linear_with_sigmoid",
                         LinearWithActivation(
-                            latent_size, self.out_width * self.out_height, Sigmoid()
+                            in_size=latent_size,
+                            out_size=self.out_width * self.out_height,
+                            activation_layer=Tanh(),
+                            normalize=False,
                         ),
                     ),
                 ]
             )
         )
 
-        self.to_image = partial(reshape, shape=(-1, 1, self.out_width, self.out_height))
-
     def forward(self, x: Tensor) -> Tensor:
         generated = self.model(x)
-
-        return generated.reshape(-1, 1, self.out_width, self.out_height)
+        return generated.view(-1, 1, self.out_width, self.out_height)
 
 
 class GanDiscriminator(Module):
@@ -84,7 +85,7 @@ class GanDiscriminator(Module):
         in_height: int,
         hidden_size: int,
         maxout_depth: int,
-        device: str | torch_device | int = "cpu",
+        drop_out_proba: float,
     ) -> None:
         super().__init__()
 
@@ -92,34 +93,41 @@ class GanDiscriminator(Module):
         self.in_height = in_height
         self.hidden_size = hidden_size
         self.maxout_depth = maxout_depth
+        self.drop_out_proba = drop_out_proba
 
         in_size = in_width * in_height
-        self.to_vector = partial(reshape, shape=(-1, in_size))
 
         self.model = Sequential(
             OrderedDict(
                 [
                     (
-                        "maxout_hidden_1",
-                        MaxOut(in_size, hidden_size, maxout_depth, device),
+                        "dropout_1",
+                        Dropout(drop_out_proba),
                     ),
-                    ("batch_norm_1", BatchNorm1d(hidden_size, 0.8)),
                     (
-                        "maxout_hidden_2",
-                        MaxOut(hidden_size, hidden_size, maxout_depth, device),
+                        "maxout_1",
+                        MaxOut(in_size, hidden_size, maxout_depth),
                     ),
-                    ("batch_norm_2", BatchNorm1d(hidden_size, 0.8)),
+                    (
+                        "dropout_2",
+                        Dropout(drop_out_proba),
+                    ),
+                    (
+                        "maxout_2",
+                        MaxOut(hidden_size, hidden_size, maxout_depth),
+                    ),
                     (
                         "linear_with_sigmoid",
-                        LinearWithActivation(hidden_size, 1, Sigmoid()),
+                        LinearWithActivation(
+                            hidden_size, 1, Sigmoid(), normalize=False
+                        ),
                     ),
                 ]
             )
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        x = self.to_vector(x)
-        return self.model(x)
+        return self.model(x.view(x.size(0), -1))
 
 
 @dataclass
@@ -159,7 +167,7 @@ class Gan(Module):
         generator_latent_size: int,
         discriminator_hidden_size: int,
         discriminator_maxout_depth: int,
-        device: str | torch_device | int = "cpu",
+        discriminator_drop_out_proba: float = 0.2,
     ) -> None:
         """Initializes the Vae.
 
@@ -173,57 +181,31 @@ class Gan(Module):
             device: Device to use for the model running.
         """
         super().__init__()
-        self.device = torch_device(device)
 
         self.generator = GanGenerator(
             out_width=image_width,
             out_height=image_height,
             input_size=generator_input_size,
             latent_size=generator_latent_size,
-        ).to(self.device)
+        )
 
         self.discriminator = GanDiscriminator(
             in_width=image_width,
             in_height=image_height,
             hidden_size=discriminator_hidden_size,
             maxout_depth=discriminator_maxout_depth,
-            device=device,
-        ).to(self.device)
-
-        self.bce_loss = BCELoss()
+            drop_out_proba=discriminator_drop_out_proba,
+        )
 
     def forward(self, x: Tensor) -> Tensor:
         return self.discriminator(x)
 
-    def generate(self, n: int) -> Tensor:
-        size = (n, self.generator.input_size)
-        return self.generator(randn(size=size, device=self.device))
-
-    def generator_loss(self, x: Tensor) -> Tensor:
-        """compute the loss from generated data.
-
-        x has been created by calling the generate method.
-        """
-        discriminated = self.discriminator(x)
-        label = ones_like(discriminated, requires_grad=False)
-        return self.bce_loss(discriminated, label)
-
-    def discriminator_loss(self, x: Tensor, fake: Tensor) -> Tensor:
-        real_discriminated = self.discriminator(x)
-        real_label = ones_like(real_discriminated, requires_grad=False)
-        real_loss = self.bce_loss(real_discriminated, real_label)
-
-        fake_discriminated = self.discriminator(fake.detach())
-        fake_label = zeros_like(fake_discriminated, requires_grad=False)
-        fake_loss = self.bce_loss(fake_discriminated, fake_label)
-
-        return (real_loss + fake_loss) / 2
-
     def __str__(self) -> str:
         return (
-            f"GAN_image_width_{self.generator.out_width}_image_height_{self.generator.out_height}"
-            f"_generator_input_size_{self.generator.input_size}_"
+            f"GAN_image_width_{self.generator.out_width}_image_height_{self.generator.out_height}_"
+            f"generator_input_size_{self.generator.input_size}_"
             f"generator_latent_size_{self.generator.latent_size}_"
             f"discriminator_hidden_size_{self.discriminator.hidden_size}_"
-            f"discriminator_maxout_depth_{self.discriminator.maxout_depth}"
+            f"discriminator_maxout_depth_{self.discriminator.maxout_depth}_"
+            f"discriminator_drop_out_proba_{self.discriminator.drop_out_proba}"
         )

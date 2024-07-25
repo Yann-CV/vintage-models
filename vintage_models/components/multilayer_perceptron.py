@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 import torch
-from torch.nn import Module, Linear, GELU, Sequential, ModuleList
+from torch.nn import Module, Linear, GELU, Sequential, ModuleList, BatchNorm1d
 from torch import Tensor, stack, device as torch_device
 
 
@@ -35,13 +35,23 @@ class TwoLayerMLP(Module):
 
 
 class LinearWithActivation(Module):
-    def __init__(self, in_size: int, out_size: int, activation_layer: Module) -> None:
+    def __init__(
+        self,
+        in_size: int,
+        out_size: int,
+        activation_layer: Module,
+        normalize: bool = False,
+    ) -> None:
         super().__init__()
         self.linear = Linear(in_size, out_size)
+        self.normalize = BatchNorm1d(out_size) if normalize else None
         self.activation = activation_layer
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.activation(self.linear(x))
+        x = self.linear(x)
+        if self.normalize is not None:
+            x = self.normalize(x)
+        return self.activation(x)
 
 
 class MaxOut(Module):

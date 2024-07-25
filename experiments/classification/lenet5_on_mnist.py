@@ -7,6 +7,8 @@ from pytorch_lightning.loggers import MLFlowLogger
 from experiments.classification.classifier import ImageClassifier
 from experiments.data.mnist import MNISTDataModule
 from vintage_models.cnn.lenet.lenet import LeNet5
+from torchvision.transforms.v2 import Compose, ToImage, Normalize, ToDtype
+from vintage_models.components.image import MaybeToColor
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -35,10 +37,21 @@ CHECKPOINT_CALLBACK = ModelCheckpoint(
     filename="lenet5-mnist-{epoch:02d}-{accuracy:.2f}",
 )
 
-DATAMODULE = MNISTDataModule(Path("/storage/ml"), train_batch_size=500)
-
+DATAMODULE = MNISTDataModule(
+    Path("/storage/ml"),
+    train_batch_size=500,
+    transform=Compose(
+        [
+            ToImage(),
+            ToDtype(torch.float32, scale=True),
+            Normalize((0.1307,), (0.3081,)),
+            MaybeToColor(),
+        ]
+    ),
+)
 DATAMODULE.prepare_data()
 DATAMODULE.setup("fit")
+
 TRAINER = Trainer(
     accelerator=DEVICE,
     callbacks=[CHECKPOINT_CALLBACK],
