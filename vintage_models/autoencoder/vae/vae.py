@@ -1,6 +1,6 @@
 from functools import partial
 
-from torch import Tensor, reshape, device as torch_device, randn, randn_like, exp
+from torch import Tensor, reshape, randn, randn_like, exp
 from torch.nn import Module, Linear, Tanh, ReLU, Sigmoid
 from torch.nn.functional import binary_cross_entropy
 
@@ -148,7 +148,6 @@ class Vae(Module):
         image_height: int,
         hidden_size: int,
         latent_size: int,
-        device: str | torch_device | int = "cpu",
     ) -> None:
         """Initializes the Vae.
 
@@ -157,19 +156,13 @@ class Vae(Module):
             image_height: Height of the input and ouput images.
             hidden_size: Size of the hidden layer (after application of the linear and activation layer).
             latent_size: Size of the latent layer.
-            device: Device to use for the model running.
         """
         super().__init__()
-        self.device = torch_device(device)
 
         self.latent_size = latent_size
 
-        self.encoder = VaeEncoder(
-            image_width, image_height, hidden_size, latent_size
-        ).to(self.device)
-        self.decoder = VaeDecoder(
-            image_width, image_height, hidden_size, latent_size
-        ).to(self.device)
+        self.encoder = VaeEncoder(image_width, image_height, hidden_size, latent_size)
+        self.decoder = VaeDecoder(image_width, image_height, hidden_size, latent_size)
 
     def forward(self, x: Tensor) -> Tensor:
         encoded = self.encoder(x)

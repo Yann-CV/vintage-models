@@ -1,8 +1,7 @@
 from collections import OrderedDict
 
-import torch
 from torch.nn import Module, Linear, GELU, Sequential, ModuleList, BatchNorm1d
-from torch import Tensor, stack, device as torch_device
+from torch import Tensor, stack, device as torch_device, max as torch_max
 
 
 class TwoLayerMLP(Module):
@@ -35,6 +34,14 @@ class TwoLayerMLP(Module):
 
 
 class LinearWithActivation(Module):
+    """Linear layer followed by a potential batch normalization and an activation layer.
+
+    Attributes:
+        linear: The linear layer.
+        normalize: The batch normalization layer. None if no normalization is needed.
+        activation: The activation layer.
+    """
+
     def __init__(
         self,
         in_size: int,
@@ -42,6 +49,14 @@ class LinearWithActivation(Module):
         activation_layer: Module,
         normalize: bool = False,
     ) -> None:
+        """Initializes the LinearWithActivation.
+
+        Args:
+            in_size: The size of the input.
+            out_size: The size of the output layer.
+            activation_layer: The activation layer.
+            normalize: Whether to normalize the output of the linear layer
+        """
         super().__init__()
         self.linear = Linear(in_size, out_size)
         self.normalize = BatchNorm1d(out_size) if normalize else None
@@ -83,7 +98,7 @@ class MaxOut(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         linear_outputs = stack([linear(x) for linear in self.linears], dim=2)
-        return torch.max(linear_outputs, dim=2)[0]
+        return torch_max(linear_outputs, dim=2)[0]
 
 
 class TwoLayerGeluMLP(Module):

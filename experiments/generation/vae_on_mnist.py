@@ -18,7 +18,6 @@ MODEL = Vae(
     image_height=28,
     hidden_size=500,
     latent_size=200,
-    device=DEVICE,
 )
 
 GENERATOR = ImageAutoEncoderGenerator(MODEL)
