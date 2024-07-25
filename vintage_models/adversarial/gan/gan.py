@@ -13,8 +13,8 @@ class GanGenerator(Module):
     Attributes:
         out_width: Width of the ouput image.
         out_height: Height of the ouput image.
-        hidden_size: Size of the hidden layer (after application of the linear and activation layer).
         latent_size: Size of the latent space.
+        input_size: Size of the input space.
     """
 
     def __init__(
@@ -77,6 +77,7 @@ class GanDiscriminator(Module):
         in_height: Height of the input image.
         hidden_size: Size of the hidden layer.
         maxout_depth: The depth of the maxout layers.
+        drop_out_proba: Probability of dropout.
     """
 
     def __init__(
@@ -151,12 +152,12 @@ class Gan(Module):
     """Vintage implementation of the generative adversarial network.
 
     See the paper_review.md file for more information.
+    The forward method is about applying the discriminator on a batch of images.
 
     Attributes:
-        generator: Generator for the generative adversarial network. Tranform the noise in an image.
-        discriminator: Discriminator for the generative adversarial network. Decide if the image
+        generator: Generator for the generative adversarial network. Transform the noise in an image.
+        discriminator: Discriminator for the generative adversarial network. Decide if an image
         is real or fake.
-        device: Device to use for the model running.
     """
 
     def __init__(
@@ -169,16 +170,16 @@ class Gan(Module):
         discriminator_maxout_depth: int,
         discriminator_drop_out_proba: float = 0.2,
     ) -> None:
-        """Initializes the Vae.
+        """Initializes the GAN.
 
         Args:
             image_width: Width of the input and ouput images.
             image_height: Height of the input and ouput images.
-            hidden_size: Size of the hidden layer for both the generator and discriminator.
-            latent_size: Size of the latent layer of the generator. The size of noise used to generate
-            a new image.
-            maxout_depth: the depth of the maxout layers in the discriminator.
-            device: Device to use for the model running.
+            generator_input_size: Size of the input space for the generator.
+            generator_latent_size: Size of the latent space for the generator.
+            discriminator_hidden_size: Size of the hidden layer for the discriminator.
+            discriminator_maxout_depth: The depth of the maxout layers for the discriminator.
+            discriminator_drop_out_proba: Probability of dropout for the discriminator.
         """
         super().__init__()
 
