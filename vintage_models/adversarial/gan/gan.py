@@ -85,7 +85,7 @@ class GanDiscriminator(Module):
         in_height: int,
         hidden_size: int,
         maxout_depth: int,
-        drop_out_proba: float,
+        drop_out_proba: float = 0.2,
     ) -> None:
         super().__init__()
 
