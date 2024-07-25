@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from pathlib import Path
 
 import numpy as np
@@ -5,8 +6,8 @@ import torch
 from lightning import LightningModule
 
 from pytorch_lightning.loggers import MLFlowLogger
-from torch import Tensor, ones_like, randn, zeros_like, device as torch_device
-from torch.nn import Linear, BCELoss
+from torch import Tensor, ones_like, randn, zeros_like
+from torch.nn import Linear, BCELoss, Module
 from torch.optim import Adam, SGD
 from torchvision.utils import make_grid
 
@@ -14,20 +15,118 @@ from vintage_models.adversarial.gan.gan import Gan, GanLosses
 from vintage_models.autoencoder.vae.vae import Vae
 
 
-class ImageAutoEncoderGenerator(LightningModule):
-    """Lightning module for image generation experiments."""
+class ImageGenerator(LightningModule):
+    """Lightning module for autoencoder image generation experiments."""
 
-    def __init__(self, model: Vae) -> None:
+    def __init__(self, model: Module) -> None:
         super().__init__()
         self.model = model
-        self.optimizer = Adam(self.model.parameters(), lr=1e-3)
 
         # log generated images
+        self.grid_side = 5
         self.generation_counter = 0
+        self.epoch_counter = 0
+
+    @abstractmethod
+    def generate_data(self, batch_size: int) -> Tensor:
+        ...
+
+    @abstractmethod
+    def training_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
+        ...
+
+    def log_image(self):
+        with torch.no_grad():
+            generated = self.generate_data(self.grid_side**2)
+
+        grid = make_grid(
+            generated,
+            nrow=self.grid_side,
+            normalize=True,
+        )
+
+        grid = np.moveaxis(grid.cpu().numpy(), 0, 2)  # from (C, H, W) to (H, W, C)
+
+        assert isinstance(self.logger, MLFlowLogger)
+        saving_path = (
+            Path("/storage/ml") / str(self.logger.experiment_id) / "training_evolution"
+        )
+        if not saving_path.exists():
+            saving_path.mkdir(parents=True, exist_ok=True)
+
+        self.logger.experiment.log_image(
+            self.logger.run_id,
+            grid,
+            f"training_evolution/generated_{self.epoch_counter}.png",
+        )
+
+        self.epoch_counter += 1
+
+    def test_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
+        data, _ = batch
+
+        with torch.no_grad():
+            generated = self.generate_data(self.grid_side**2)
+
+        grid = make_grid(
+            generated,
+            nrow=self.grid_side,
+            normalize=True,
+        )
+
+        grid = np.moveaxis(grid.cpu().numpy(), 0, 2)  # from (C, H, W) to (H, W, C)
+
+        assert isinstance(self.logger, MLFlowLogger)
+        saving_path = Path("/storage/ml") / str(self.logger.experiment_id) / "generated"
+        if not saving_path.exists():
+            saving_path.mkdir(parents=True, exist_ok=True)
+
+        self.logger.experiment.log_image(
+            self.logger.run_id,
+            grid,
+            f"generated_{self.generation_counter}.png",
+        )
+
+        self.generation_counter += 1
+
+        return generated
+
+    @abstractmethod
+    def configure_optimizers(self):
+        ...
+
+
+class ImageAutoEncoderGenerator(ImageGenerator):
+    """Lightning module for autoencoder image generation experiments."""
+
+    def __init__(self, model: Vae) -> None:
+        super().__init__(model)
+
+        self.optimizer = Adam(self.model.parameters(), lr=1e-3)
+        self.bce_loss = BCELoss(reduction="none")
+        self.vector_size = (
+            self.model.encoder.image_width * self.model.encoder.image_height
+        )
+
+    def generate_data(self, batch_size: int) -> Tensor:
+        size = (batch_size, self.model.encoder.latent_size)
+        return self.model.decoder(randn(size=size, device=self.device))
+
+    def loss(self, x: Tensor) -> Tensor:
+        reconstructed = self.model.forward(x)
+
+        reconstruction_loss = (
+            self.bce_loss(reconstructed, x).reshape(-1, self.vector_size).sum(dim=1)
+        )
+
+        mean, log_var = self.model.encoder.compute_mean_and_log_var(x)
+        kl_div = -0.5 * (1 + log_var - log_var.exp() - mean.pow(2)).sum(dim=1)
+
+        return kl_div.mean() + reconstruction_loss.mean()
 
     def training_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, _ = batch
-        loss = self.model.loss(data)
+        loss = self.loss(data)
         self.log(
             "training_loss",
             loss,
@@ -38,7 +137,7 @@ class ImageAutoEncoderGenerator(LightningModule):
 
     def validation_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, _ = batch
-        loss = self.model.loss(data)
+        loss = self.loss(data)
         self.log(
             "validation_loss",
             loss,
@@ -47,34 +146,15 @@ class ImageAutoEncoderGenerator(LightningModule):
         )
         return loss
 
-    def test_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
-        data, _ = batch
-        generated = self.generate_data(1)
-
-        assert isinstance(self.logger, MLFlowLogger)
-        saving_path = Path("/storage/ml") / str(self.logger.experiment_id) / "generated"
-        if not saving_path.exists():
-            saving_path.mkdir(parents=True, exist_ok=True)
-
-        self.logger.experiment.log_image(
-            self.logger.run_id,
-            generated.squeeze().cpu().numpy(),
-            f"generated_{self.generation_counter}.png",
-        )
-
-        self.generation_counter += 1
-        return generated
-
     def configure_optimizers(self):
         return self.optimizer
 
 
-class ImageAdversarialGenerator(LightningModule):
+class ImageAdversarialGenerator(ImageGenerator):
     """Lightning module for image generation experiments."""
 
-    def __init__(self, model: Gan, device: torch_device | str | None) -> None:
-        super().__init__()
-        self.model = model
+    def __init__(self, model: Gan) -> None:
+        super().__init__(model)
 
         self.discriminator_optimiser = SGD(
             self.model.discriminator.parameters(), lr=0.01
@@ -82,14 +162,7 @@ class ImageAdversarialGenerator(LightningModule):
         self.generator_optimiser = SGD(self.model.generator.parameters(), lr=0.01)
         self.bce_loss = BCELoss()
 
-        self.generation_counter = 0
-        self.epoch_counter = 0
         self.last_train_loss: GanLosses
-
-        self.grid_side = 5
-        self.train_epoch_end_noise = randn(
-            size=(self.grid_side**2, self.model.generator.input_size), device=device
-        )
 
     def configure_optimizers(self):
         # with multiple optimizers, we should set self.automatic_optimization = False
@@ -159,32 +232,7 @@ class ImageAdversarialGenerator(LightningModule):
             prog_bar=True,
             logger=True,
         )
-
-        with torch.no_grad():
-            generated = self.model.generator(self.train_epoch_end_noise)
-
-        grid = make_grid(
-            generated,
-            nrow=self.grid_side,
-            normalize=True,
-        )
-
-        grid = np.moveaxis(grid.cpu().numpy(), 0, 2)  # from (C, H, W) to (H, W, C)
-
-        assert isinstance(self.logger, MLFlowLogger)
-        saving_path = (
-            Path("/storage/ml") / str(self.logger.experiment_id) / "training_evolution"
-        )
-        if not saving_path.exists():
-            saving_path.mkdir(parents=True, exist_ok=True)
-
-        self.logger.experiment.log_image(
-            self.logger.run_id,
-            grid,
-            f"training_evolution/generated_{self.epoch_counter}.png",
-        )
-
-        self.epoch_counter += 1
+        self.log_image()
 
     def test_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, _ = batch

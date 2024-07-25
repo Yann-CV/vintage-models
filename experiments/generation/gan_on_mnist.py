@@ -20,7 +20,7 @@ MODEL = Gan(
     discriminator_maxout_depth=5,
 )
 
-GENERATOR = ImageAdversarialGenerator(MODEL, DEVICE)
+GENERATOR = ImageAdversarialGenerator(MODEL)
 
 LOGGER = MLFlowLogger(
     experiment_name="GAN on MNIST",

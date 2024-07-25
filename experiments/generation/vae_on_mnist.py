@@ -11,7 +11,7 @@ from torchvision.transforms.v2 import Compose, ToImage, ToDtype
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-EPOCH_COUNT = 30
+EPOCH_COUNT = 3
 
 MODEL = Vae(
     image_width=28,
