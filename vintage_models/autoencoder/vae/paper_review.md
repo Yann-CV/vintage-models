@@ -11,8 +11,6 @@ taken from [YouTube](https://www.youtube.com/watch?v=5WoItGTWV54)
 
 # Connection to other papers
 
-- Goodfellow, I., Warde-Farley, D., Mirza, M., Courville, A., & Bengio, Y. (2013, May).
-Maxout networks. In International conference on machine learning (pp. 1319-1327). PMLR.
 
 # Interesting resources
 
