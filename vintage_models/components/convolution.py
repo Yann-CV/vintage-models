@@ -1,5 +1,4 @@
-import torch
-from torch import Tensor
+from torch import Tensor, cat
 from torch.nn import Conv2d, ModuleList, Module
 from torch.nn.common_types import _size_2_t
 
@@ -60,4 +59,4 @@ class FilteredConv2d(Module):
         ):
             conv_result_list.append(conv2d(x[:, in_channels]))
 
-        return torch.cat(conv_result_list, dim=-3)
+        return cat(conv_result_list, dim=-3)
