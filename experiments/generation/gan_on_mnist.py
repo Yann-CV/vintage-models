@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import torch.cuda
+import torch
 from lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
 from experiments.data.mnist import MNISTDataModule

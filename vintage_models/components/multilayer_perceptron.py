@@ -55,7 +55,7 @@ class LinearWithActivation(Module):
             in_size: The size of the input.
             out_size: The size of the output layer.
             activation_layer: The activation layer.
-            normalize: Whether to normalize the output of the linear layer
+            normalize: Whether or not to normalize the output of the linear layer
         """
         super().__init__()
         self.linear = Linear(in_size, out_size)

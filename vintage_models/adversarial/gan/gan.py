@@ -52,7 +52,7 @@ class GanGenerator(Module):
                         ),
                     ),
                     (
-                        "linear_with_sigmoid",
+                        "linear_with_tanh",
                         LinearWithActivation(
                             in_size=latent_size,
                             out_size=self.out_width * self.out_height,

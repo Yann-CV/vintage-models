@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from pathlib import Path
 
 import numpy as np
@@ -15,8 +15,13 @@ from vintage_models.adversarial.gan.gan import Gan, GanLosses
 from vintage_models.autoencoder.vae.vae import Vae
 
 
-class ImageGenerator(LightningModule):
-    """Lightning module for autoencoder image generation experiments."""
+class ImageGenerator(LightningModule, ABC):
+    """Lightning module for image generation experiments.
+
+    It specifies the structure of the training and testing steps for image generation.
+    It is also responsible for logging the generated images in order to follow up
+    the training evolution.
+    """
 
     def __init__(self, model: Module) -> None:
         super().__init__()
@@ -137,7 +142,8 @@ class ImageAutoEncoderGenerator(ImageGenerator):
 
     def validation_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
         data, _ = batch
-        loss = self.loss(data)
+        with torch.no_grad():
+            loss = self.loss(data)
         self.log(
             "validation_loss",
             loss,
@@ -211,53 +217,16 @@ class ImageAdversarialGenerator(ImageGenerator):
         return torch.tensor(0.0, requires_grad=True)
 
     def on_train_epoch_end(self) -> None:
-        generator_loss = self.last_train_loss.generator_loss.item()
-        discriminator_loss = self.last_train_loss.discriminator_loss.item()
-
         self.log(
             "training_generator_loss",
-            generator_loss,
+            self.last_train_loss.generator_loss,
             prog_bar=True,
             logger=True,
         )
         self.log(
             "training_discriminator_loss",
-            discriminator_loss,
-            prog_bar=True,
-            logger=True,
-        )
-        self.log(
-            "training_loss",
-            generator_loss + discriminator_loss,
+            self.last_train_loss.discriminator_loss,
             prog_bar=True,
             logger=True,
         )
         self.log_image()
-
-    def test_step(self, batch: tuple[Tensor, Tensor]) -> Tensor:
-        data, _ = batch
-
-        with torch.no_grad():
-            generated = self.generate_data(self.grid_side**2)
-        grid = make_grid(
-            generated,
-            nrow=self.grid_side,
-            normalize=True,
-        )
-
-        grid = np.moveaxis(grid.cpu().numpy(), 0, 2)  # from (C, H, W) to (H, W, C)
-
-        assert isinstance(self.logger, MLFlowLogger)
-        saving_path = Path("/storage/ml") / str(self.logger.experiment_id) / "generated"
-        if not saving_path.exists():
-            saving_path.mkdir(parents=True, exist_ok=True)
-
-        self.logger.experiment.log_image(
-            self.logger.run_id,
-            grid,
-            f"generated_{self.generation_counter}.png",
-        )
-
-        self.generation_counter += 1
-
-        return generated
