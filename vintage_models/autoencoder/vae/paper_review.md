@@ -12,7 +12,6 @@ taken from [YouTube](https://www.youtube.com/watch?v=5WoItGTWV54)
 # Connection to other papers
 
 
-
 # Interesting resources
 
 - Lecture Collection. Convolutional Neural Networks for Visual Recognition (Spring 2017).

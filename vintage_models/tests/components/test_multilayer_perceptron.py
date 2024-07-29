@@ -7,6 +7,7 @@ from vintage_models.components.multilayer_perceptron import (
     TwoLayerGeluMLP,
     TwoLayerMLP,
     LinearWithActivation,
+    MaxOut,
 )
 
 
@@ -59,6 +60,11 @@ class TestLinearWithActivation:
         output = self.linear_with_activation(input)
         assert output.shape == (2, 2)
 
+    def test_with_activation(self, input):
+        linear_with_activation = LinearWithActivation(3, 2, Sigmoid(), normalize=True)
+        output = linear_with_activation(input)
+        assert output.shape == (2, 2)
+
     def test_wrong_input_size(self, input):
         with pytest.raises(RuntimeError):
             self.linear_with_activation(torch.zeros(1, 2))
@@ -67,3 +73,20 @@ class TestLinearWithActivation:
     def test_gpu_usage(self, input):
         self.linear_with_activation.to("cuda")
         self.linear_with_activation(input.to("cuda"))
+
+
+class TestMaxOut:
+    linear_with_max_out = MaxOut(3, 2, 4)
+
+    def test_simple(self, input):
+        output = self.linear_with_max_out(input)
+        assert output.shape == (2, 2)
+
+    def test_wrong_input_size(self, input):
+        with pytest.raises(RuntimeError):
+            self.linear_with_max_out(torch.zeros(1, 2))
+
+    @pytest.mark.skipif(GPU_NOT_AVAILABLE, reason="No gpu available")
+    def test_gpu_usage(self, input):
+        self.linear_with_max_out.to("cuda")
+        self.linear_with_max_out(input.to("cuda"))

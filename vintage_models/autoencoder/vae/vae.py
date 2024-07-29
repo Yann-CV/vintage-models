@@ -1,8 +1,7 @@
 from functools import partial
 
-from torch import Tensor, reshape, device as torch_device, randn, randn_like, exp
+from torch import Tensor, reshape, randn_like, exp
 from torch.nn import Module, Linear, Tanh, ReLU, Sigmoid
-from torch.nn.functional import binary_cross_entropy
 
 from vintage_models.components.multilayer_perceptron import LinearWithActivation
 
@@ -147,7 +146,6 @@ class Vae(Module):
         image_height: int,
         hidden_size: int,
         latent_size: int,
-        device: str | torch_device | int = "cpu",
     ) -> None:
         """Initializes the Vae.
 
@@ -158,44 +156,13 @@ class Vae(Module):
             latent_size: Size of the latent layer.
         """
         super().__init__()
-        self.device = torch_device(device)
 
-        self.latent_size = latent_size
-
-        self.encoder = VaeEncoder(
-            image_width, image_height, hidden_size, latent_size
-        ).to(self.device)
-        self.decoder = VaeDecoder(
-            image_width, image_height, hidden_size, latent_size
-        ).to(self.device)
+        self.encoder = VaeEncoder(image_width, image_height, hidden_size, latent_size)
+        self.decoder = VaeDecoder(image_width, image_height, hidden_size, latent_size)
 
     def forward(self, x: Tensor) -> Tensor:
         encoded = self.encoder(x)
         return self.decoder(encoded)
-
-    def loss(self, x: Tensor) -> Tensor:
-        reconstructed = self.forward(x)
-
-        vector_size = x.size(-1) * x.size(-2)
-        reconstruction_loss = (
-            binary_cross_entropy(
-                reconstructed,
-                x,
-                reduction="none",
-            )
-            .reshape(-1, vector_size)
-            .sum(dim=1)
-        )
-
-        mean, log_var = self.encoder.compute_mean_and_log_var(x)
-        kl_div = -0.5 * (1 + log_var - log_var.exp() - mean.pow(2)).sum(dim=1)
-
-        loss = kl_div.mean() + reconstruction_loss.mean()
-
-        return loss
-
-    def generate(self, n: int) -> Tensor:
-        return self.decoder(randn(n, self.decoder.latent_size, device=self.device))
 
     def __str__(self) -> str:
         return (

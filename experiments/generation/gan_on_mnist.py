@@ -2,66 +2,59 @@ from pathlib import Path
 
 import torch
 from lightning import Trainer
-from lightning.pytorch.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import MLFlowLogger
-from experiments.classification.classifier import ImageClassifier
 from experiments.data.mnist import MNISTDataModule
-from vintage_models.cnn.lenet.lenet import LeNet5
-from torchvision.transforms.v2 import Compose, ToImage, Normalize, ToDtype
-from vintage_models.components.image import MaybeToColor
+from experiments.generation.generator import ImageAdversarialGenerator
+from vintage_models.adversarial.gan.gan import Gan
+from torchvision.transforms.v2 import Compose, ToImage, ToDtype, Normalize
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-EPOCH_COUNT = 100
-
-MODEL = LeNet5(
+EPOCH_COUNT = 50
+MODEL = Gan(
     image_width=28,
     image_height=28,
-    class_count=10,
+    generator_input_size=100,
+    generator_latent_size=1200,
+    discriminator_hidden_size=240,
+    discriminator_maxout_depth=5,
 )
 
-CLASSIFIER = ImageClassifier(MODEL)
+GENERATOR = ImageAdversarialGenerator(MODEL)
 
 LOGGER = MLFlowLogger(
-    experiment_name="LeNet5 on MNIST",
+    experiment_name="GAN on MNIST",
     tracking_uri="/storage/ml/mlruns",
     run_name=str(MODEL),
     log_model=True,
 )
 
-CHECKPOINT_CALLBACK = ModelCheckpoint(
-    save_top_k=1,
-    monitor="training_loss",
-    mode="min",
-    dirpath="/storage/ml/models",
-    filename="lenet5-mnist-{epoch:02d}-{accuracy:.2f}",
-)
-
 DATAMODULE = MNISTDataModule(
     Path("/storage/ml"),
-    train_batch_size=500,
+    train_batch_size=128,
+    test_batch_size=128,
     transform=Compose(
         [
             ToImage(),
             ToDtype(torch.float32, scale=True),
-            Normalize((0.1307,), (0.3081,)),
-            MaybeToColor(),
+            Normalize((0.5,), (0.5,)),
         ]
     ),
+    num_workers=11,
 )
+
 DATAMODULE.prepare_data()
 DATAMODULE.setup("fit")
-
 TRAINER = Trainer(
     accelerator=DEVICE,
-    callbacks=[CHECKPOINT_CALLBACK],
     logger=LOGGER,
     max_epochs=EPOCH_COUNT,
 )
 TRAINER.fit(
-    model=CLASSIFIER,
+    model=GENERATOR,
     train_dataloaders=DATAMODULE.train_dataloader(),
     val_dataloaders=DATAMODULE.val_dataloader(),
 )
+
 DATAMODULE.setup("test")
 TRAINER.test(dataloaders=DATAMODULE.test_dataloader())
