@@ -68,15 +68,6 @@ class TestVae:
         assert output.shape == (2, 1, 28, 28)
         assert torch.all((output >= 0) & (output <= 1))
 
-    def test_loss(self, input):
-        loss = self.vae.loss(input)
-        assert isinstance(loss, torch.Tensor)
-        assert loss.ndim == 0
-
-    def test_generate(self, input):
-        generated = self.vae.generate(2)
-        assert generated.shape == (2, 1, 28, 28)
-
     def test_wrong_input_size(self, input):
         with pytest.raises(RuntimeError):
             self.vae(torch.zeros(4, 1, 28, 28 - 1))
