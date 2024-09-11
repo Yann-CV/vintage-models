@@ -36,6 +36,13 @@ tasks, challenging the dominance of convolutional neural networks.
 are probabilistic generative models. VAEs learn a probabilistic mapping from the input space to a
 latent space, enabling the generation of new samples by sampling from the latent space.
 
+### Adversarial
+
+- Generative Adversarial Network (GAN): GANs, introduced by Ian Goodfellow and his colleagues
+in 2014, have become one of the most influential and popular models for image generation.
+GANs consist of a generator network and a discriminator network that are trained adversarially,
+leading to the generation of realistic images.
+
 ## How to run the code
 
 ### Install Python (on Ubuntu)
@@ -92,11 +99,6 @@ The list as been created from prompting OpenAI ChatGpt regarding the most famous
 - AlexNet (2012): AlexNet, designed by Alex Krizhevsky, Ilya Sutskever, and Geoffrey Hinton,
 was a milestone in the ImageNet Large Scale Visual Recognition Challenge (ILSVRC) in 2012.
 It popularized the use of deep convolutional neural networks for image classification tasks.
-
-- Generative Adversarial Network (GAN): GANs, introduced by Ian Goodfellow and his colleagues
-in 2014, have become one of the most influential and popular models for image generation.
-GANs consist of a generator network and a discriminator network that are trained adversarially,
-leading to the generation of realistic images.
 
 - GoogleNet (Inception) (2014): The Inception architecture, also known as GoogleNet, introduced the
 concept of inception modules and significantly improved the efficiency and performance
