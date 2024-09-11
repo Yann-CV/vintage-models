@@ -4,11 +4,11 @@ Hey lucky people, you have probably lost yourself to end up
 here.
 
 Anyway, welcome to my vintage-models repository. Here you will find some personal implementations
-of few (I do not yet how many) of the most famous neural network models allowing to process images.
+of few (I do not know yet how many) of the most famous neural network models allowing to process images.
 
 These implementations are made from my personal understanding of the scientific papers introducing
 these models. Thus, some implementation/architecture choices can be (are probably) wrong. Even though
-the likelihood one of you will really use code from here, please accept my deep apologies for that.
+the likelihood that one of you will use some code from here is really small, please accept my deep apologies for that.
 
 Beside better understanding these models behavior, I am also using this repository
 as a road to better learn how to use PyTorch. Thus, in addition of questionable model architecture,
@@ -45,7 +45,7 @@ leading to the generation of realistic images.
 
 ## How to run the code
 
-### Install Python
+### Install Python (on Ubuntu)
 
 ```bash
 # Install pyenv and pyenv-virtualenv
@@ -53,7 +53,6 @@ curl https://pyenv.run | bash
 
 # Configure bash
 # see https://github.com/pyenv/pyenv/issues/1906
-# tested and working on yueh
 echo >> ~/.bashrc 'export PATH="$HOME/.pyenv/bin:$PATH"'
 echo >> ~/.bashrc 'eval "$(pyenv init --path)"'
 echo >> ~/.bashrc 'eval "$(pyenv init -)"'
@@ -135,6 +134,10 @@ enabling the model to capture information at different spatial resolutions effic
 
 - TNT (Token-wise self-attention) (2021): TNT proposed a token-wise self-attention mechanism
 to improve the Vision Transformer's performance in handling fine-grained details in images.
+
+### Diffusion models
+
+- "Diffusion Models Beat GANs on Image Synthesis" by Prafulla Dhariwal and Alex Nichol. It was presented at NeurIPS 2021. This paper demonstrated that diffusion models, a type of generative model that gradually denoises data, could produce high-quality images that outperform traditional Generative Adversarial Networks (GANs) in several benchmarks.
 
 ### Vision Language Models
 
