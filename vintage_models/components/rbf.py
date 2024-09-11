@@ -1,5 +1,4 @@
-import torch
-from torch import stack
+from torch import stack, sum as torch_sum
 from torch.nn import Linear, MSELoss
 
 from torch.nn.functional import mse_loss
@@ -36,4 +35,4 @@ class EuclideanDistanceRBF(Linear):
         weights = stack([self.weight.transpose(0, 1)] * x.shape[0], dim=0)
         x = stack([x] * self.out_features, dim=-1)
         loss = mse_loss(x, weights, reduction="none")
-        return torch.sum(loss, dim=1)
+        return torch_sum(loss, dim=1)
