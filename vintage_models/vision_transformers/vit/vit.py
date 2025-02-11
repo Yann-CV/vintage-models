@@ -8,6 +8,7 @@ from vintage_models.components.positional_encoding import LearnablePositionalEnc
 from vintage_models.components.residual import ResidualWithSelfAttention
 from vintage_models.utility.transform import PaddingMode
 
+
 class ViTEncoderLayer(Module):
     """Layer of the ViT encoder
 
@@ -18,6 +19,7 @@ class ViTEncoderLayer(Module):
         self_attention_residual: The residual module for the self attention (attention plus normalization).
         mlp_residual: The residual module for the MLP (mlp plus normalization).
     """
+
     def __init__(
         self,
         head_count: int,
