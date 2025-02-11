@@ -18,16 +18,17 @@ class ViTEncoderLayer(Module):
         self_attention_residual: The residual module for the self attention (attention plus normalization).
         mlp_residual: The residual module for the MLP (mlp plus normalization).
     """
-
     def __init__(
         self,
         head_count: int,
         embedding_len: int,
         mlp_hidden_size: int,
     ) -> None:
+        super().__init__()
         self.embedding_len = embedding_len
         self.mlp_hidden_size = mlp_hidden_size
         self.head_count = head_count
+
         self.self_attention_residual = ResidualWithSelfAttention(
             [
                 LayerNorm(embedding_len),
