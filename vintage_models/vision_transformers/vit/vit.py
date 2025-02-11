@@ -1,4 +1,4 @@
-from torch.nn import Module, LayerNorm, Linear, Parameter
+from torch.nn import Module, LayerNorm, Linear, Parameter, Sequential
 from torch import Tensor, randn, cat, softmax
 
 from vintage_models.components.attention import MultiHeadAttention
@@ -8,12 +8,10 @@ from vintage_models.components.positional_encoding import LearnablePositionalEnc
 from vintage_models.components.residual import ResidualWithSelfAttention
 from vintage_models.utility.transform import PaddingMode
 
-
-class ViTEncoder(Module):
-    """Encoder of the Vision Transformer ViT.
+class ViTEncoderLayer(Module):
+    """Layer of the ViT encoder
 
     Attributes:
-        layer_count: The number of layers to apply.
         head_count: The number of attention heads to use in each layer.
         embedding_len: The length of the embedding.
         mlp_hidden_size: The size of the hidden layer of the MLP.
@@ -23,17 +21,13 @@ class ViTEncoder(Module):
 
     def __init__(
         self,
-        layer_count: int,
         head_count: int,
         embedding_len: int,
         mlp_hidden_size: int,
     ) -> None:
-        super().__init__()
-        self.layer_count = layer_count
-        self.head_count = head_count
         self.embedding_len = embedding_len
         self.mlp_hidden_size = mlp_hidden_size
-
+        self.head_count = head_count
         self.self_attention_residual = ResidualWithSelfAttention(
             [
                 LayerNorm(embedding_len),
@@ -52,9 +46,40 @@ class ViTEncoder(Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        for _ in range(self.layer_count):
-            x = self.mlp_residual(self.self_attention_residual(x))
-        return x
+        return self.mlp_residual(self.self_attention_residual(x))
+
+
+class ViTEncoder(Module):
+    """Encoder of the Vision Transformer ViT.
+
+    Attributes:
+        layer_count: The number of layers to apply.
+        model: The stack of ViT layers.
+    """
+
+    def __init__(
+        self,
+        layer_count: int,
+        head_count: int,
+        embedding_len: int,
+        mlp_hidden_size: int,
+    ) -> None:
+        super().__init__()
+        self.layer_count = layer_count
+
+        self.model = Sequential(
+            {
+                f"layer_{layer_idx}": ViTEncoderLayer(
+                    head_count=head_count,
+                    embedding_len=embedding_len,
+                    mlp_hidden_size=mlp_hidden_size,
+                )
+                for layer_idx in range(layer_count)
+            }
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.model(x)
 
 
 class ViTEmbedder(Module):
