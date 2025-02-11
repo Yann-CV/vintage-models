@@ -71,14 +71,14 @@ class ViTEncoder(Module):
         self.head_count = head_count
 
         self.model = Sequential(
-            {
-                f"layer_{layer_idx}": ViTEncoderLayer(
+            *[
+                ViTEncoderLayer(
                     head_count=head_count,
                     embedding_len=embedding_len,
                     mlp_hidden_size=mlp_hidden_size,
                 )
-                for layer_idx in range(layer_count)
-            }
+                for _ in range(layer_count)
+            ]
         )
 
     def forward(self, x: Tensor) -> Tensor:
