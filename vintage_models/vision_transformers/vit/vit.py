@@ -55,6 +55,7 @@ class ViTEncoder(Module):
 
     Attributes:
         layer_count: The number of layers to apply.
+        head_count: the number of head in multihead attention modules
         model: The stack of ViT layers.
     """
 
@@ -67,6 +68,7 @@ class ViTEncoder(Module):
     ) -> None:
         super().__init__()
         self.layer_count = layer_count
+        self.head_count = head_count
 
         self.model = Sequential(
             {
