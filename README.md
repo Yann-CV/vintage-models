@@ -10,10 +10,6 @@ These implementations are made from my personal understanding of the scientific 
 these models. Thus, some implementation/architecture choices can be (are probably) wrong. Even though
 the likelihood that one of you will use some code from here is really small, please accept my deep apologies for that.
 
-Beside better understanding these models behavior, I am also using this repository
-as a road to better learn how to use PyTorch. Thus, in addition of questionable model architecture,
-these implementations are probably weak version of "more official" ones.
-
 ## Implemented models
 
 The list as been created from prompting OpenAI ChatGpt regarding the most famous models.
